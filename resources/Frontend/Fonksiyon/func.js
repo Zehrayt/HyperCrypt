@@ -105,13 +105,42 @@ function renderSuccess(data) {
     }
 
     // Aksiyom Test Sonuçlarını Oluştur
+    //let testsHTML = `
+    //    <p><b>En Yüksek Yapı:</b> ${data.highestStructure || "Belirlenemedi"}</p>
+    //    <ul>
+    //        <li><span>Hipergrupoid</span><span class="pill ${data.hypergroupoid}">${data.hypergroupoid}</span></li>
+    //        <li><span>Yarı Hipergrup</span><span class="pill ${data.semihypergroup}">${data.semihypergroup}</span></li>
+    //        <li><span>Kuazi Hipergrup</span><span class="pill ${data.quasihypergroup}">${data.quasihypergroup}</span></li>
+    //        <li><span>Hipergrup</span><span class="pill ${data.hypergroup}">${data.hypergroup}</span></li>
+    //    </ul>
+    //`;
+
+     
     let testsHTML = `
         <p><b>En Yüksek Yapı:</b> ${data.highestStructure || "Belirlenemedi"}</p>
+        
+        <h5>Çarpımsal Yapı Özellikleri (*)</h5>
         <ul>
-            <li><span>Hipergrupoid</span><span class="pill ${data.hypergroupoid}">${data.hypergroupoid}</span></li>
-            <li><span>Yarı Hipergrup</span><span class="pill ${data.semihypergroup}">${data.semihypergroup}</span></li>
-            <li><span>Kuazi Hipergrup</span><span class="pill ${data.quasihypergroup}">${data.quasihypergroup}</span></li>
-            <li><span>Hipergrup</span><span class="pill ${data.hypergroup}">${data.hypergroup}</span></li>
+            <li>
+              <span>Yarı Hipergrup (Birleşme)</span>
+              <span class="pill ${data.semihypergroup}">${data.semihypergroup}</span>
+            </li>
+            <li>
+              <span>Kuazi Hipergrup (Üretim)</span>
+              <span class="pill ${data.quasihypergroup}">${data.quasihypergroup}</span>
+            </li>
+        </ul>
+
+        <h5>Hiperhalka Özellikleri (+, *)</h5>
+        <ul>
+            <li>
+              <span>Dağılma Özelliği</span>
+              <span class="pill ${data.isDistributive}">${data.isDistributive}</span>
+            </li>
+            <li>
+              <span>Negatif Özelliği</span>
+              <span class="pill ${data.hasNegativeProperty}">${data.hasNegativeProperty}</span>
+            </li>
         </ul>
     `;
     document.getElementById("structure-tests").innerHTML = testsHTML;

@@ -12,6 +12,8 @@ public class VerificationResult {
     private String suggestion;
     private Map<String, Map<String, String>> cayleyTable; // Cayley tablosu
     //private boolean isAssociative;
+    private boolean isDistributive;
+    private boolean hasNegativeProperty;
 
     public boolean isHypergroupoid() {
         return isHypergroupoid;
@@ -84,6 +86,22 @@ public class VerificationResult {
 
     public void setCayleyTable(Map<String, Map<String, String>> cayleyTable) {
         this.cayleyTable = cayleyTable;
+    }
+
+    public boolean isDistributive() {
+        return isDistributive;
+    }
+
+    public void setDistributive(boolean distributive) {
+        isDistributive = distributive;
+    }
+
+    public boolean isHasNegativeProperty() {
+        return hasNegativeProperty;
+    }
+
+    public void setHasNegativeProperty(boolean hasNegativeProperty) {
+        this.hasNegativeProperty = hasNegativeProperty;
     }
 
 }
