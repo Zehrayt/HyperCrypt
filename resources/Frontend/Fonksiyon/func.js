@@ -1,6 +1,6 @@
 const finiteBtn = document.getElementById("finiteBtn");
 const infiniteBtn = document.getElementById("infiniteBtn");
-const API_BASE_URL = 'https://hypercrypt.up.railway.app';
+const API_BASE_URL = 'https://hypercrypt.onrender.com';
 
 finiteBtn.addEventListener("click", function () {
   if (this.id === "finiteBtn") {
