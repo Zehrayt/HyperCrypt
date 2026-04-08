@@ -118,29 +118,48 @@ public class SymbolicVerifierService {
 
     /**
      * Üretim Aksiyomu Testi (Reproduction Axiom).
-     * Yeni versiyon: sonsuz kümeler için sembolik denklik kontrolü.
+     * String eşleştirme (göstermelik) yerine JAS kullanılarak 
+     * gerçek "Polinom Derecesi (Polynomial Degree)" analizi ile matematiksel ispat yapıldı.
+     * Bir hiper-işlemin sonsuz kümelerde (Z veya Q) üretim aksiyomunu (a . H = H) sağlaması için, 
+     * a . x = y denkleminin her zaman çözülebilir olması gerekir.
+     * Bunun tek bir yolu vardır: Kuralın (polinomun) toplam derecesi kesinlikle 1 olmalıdır.
+     * formül c_1a + c_2b + c_3 şeklinde (lineer) olmak zorundadır.
+     * Eğer kuralda a . b varsa (toplam derece 1+1=2 olur) veya a^2 varsa (derece 2), bu denklem her zaman çözülemez.
+     * Sıfıra bölme veya kök alma hatası verir ve bu da üretim aksiyomunun sağlanmamasına neden olur.
+     * Ayrıca formülde hem a hem de b harfi mutlaka bulunmalıdır.
+     * JAS'ın degree() fonksiyonunu kullanarak polinomun derecesine göre matematiksel ispat yapacağız.
      */
     private <C extends RingElem<C>> void verifyGenerationAxiom(String rule, String domain, VerificationResult result) {
-        System.out.println("Symbolically checking generation axiom for rule: " + rule);
+        System.out.println("Symbolically checking generation axiom using JAS for rule: " + rule);
 
         boolean isSolvable = false;
         try {
-            String trimmedRule = rule.trim();
+            // JAS Kütüphanesi ile kuralı gerçek bir polinoma çeviriyoruz
+            @SuppressWarnings("unchecked")
+            RingFactory<C> factory = (RingFactory<C>) getCoefficientFactory(domain);
+            GenPolynomialRing<C> ruleRing = new GenPolynomialRing<>(factory, new String[]{"x", "y"});
+            GenPolynomial<C> rulePoly = ruleRing.parse(rule.replace("a", "x").replace("b", "y"));
 
-            if (trimmedRule.equals("a+b") || trimmedRule.equals("a + b")) {
-                // Denklem: a + x = y  => x = y - a.
-                // Tamsayılar ve Rasyoneller için her zaman çözüm var.
+            // MATEMATİKSEL İSPAT ALGORİTMASI:
+            long totalDegree = rulePoly.degree(); // Polinomun toplam derecesi
+            long degreeX = rulePoly.degree(0);    // 'a' değişkeninin (x) derecesi
+            long degreeY = rulePoly.degree(1);    // 'b' değişkeninin (y) derecesi
+
+            if (totalDegree > 1) {
+                // Eğer derece 1'den büyükse (örn: a*b çarpımı veya a^2 varsa), evrensel olarak çözülemez.
+                // Hakem 1'in bahsettiği "Sıfıra bölme" hatası a*b'nin 2. dereceden olmasından kaynaklanır.
+                isSolvable = false;
+                result.setSuggestion("Reproduction axiom fails mathematically. The polynomial degree is > 1 (e.g., contains 'a*b' or 'a^2'), which means the function is not surjective mapping over the domain.");
+            } else if (degreeX == 0 || degreeY == 0) {
+                // Eğer değişkenlerden biri hiç yoksa (Örn: kural sadece "a" veya "5" ise)
+                isSolvable = false;
+                result.setSuggestion("Both variables 'a' and 'b' must be present in the rule to satisfy both left and right reproduction axioms.");
+            } else {
+                // Eğer toplam derece 1 ise ve iki değişken de varsa, bu kural lineerdir (c1*a + c2*b + c3).
+                // Lineer kurallar Rasyonel sayılarda ve Tamsayılarda üretim aksiyomunu sağlar.
                 isSolvable = true;
-            } else if (trimmedRule.equals("a*b") || trimmedRule.equals("a * b")) {
-                // Denklem: a * x = y => x = y / a.
-                // DÜZELTME: Eğer küme '0' elemanını içeriyorsa (Integers ve Rationals içerir),
-                // a=0 ve y≠0 olduğunda bu denklemin çözümü yoktur (0 * x = y olamaz).
-                // Dolayısıyla standart a*b kuralı tam sayılarda da rasyonellerde de genel bir üretim aksiyomu (aH=H) SAĞLAMAZ.
-                isSolvable = false; 
-                result.setSuggestion("The equation a*x=y has no solution when a=0 and y≠0. Reproduction axiom fails for standard multiplication on domains containing zero.");
             }
 
-            // Sonucu ayarla
             result.setQuasihypergroup(isSolvable);
             if (!isSolvable && result.getFailingAxiom() == null) {
                 result.setFailingAxiom("Üretim Aksiyomu (Reproduction)");

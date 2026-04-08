@@ -4,7 +4,6 @@ public class KeyExchangeResult {
     public Integer result;
     public String explanation;
 
-    // --- YENİ EKLENEN CONSTRUCTOR ---
     /**
      * Yeni bir KeyExchangeResult nesnesi oluşturur.
      * @param result Hesaplanan kriptografik sonuç (genel anahtar veya ortak sır).

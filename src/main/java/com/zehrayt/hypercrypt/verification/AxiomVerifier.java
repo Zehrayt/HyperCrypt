@@ -135,10 +135,6 @@ public class AxiomVerifier<T extends java.lang.Number> {
         return true;
     }
 
-    
-    //////YENİ EKLENEN METOT//////
-    /// 
-    /// 
 
     /**
      * Dağılma özelliğini kontrol eder: a * (b + c) ⊆ a*b + a*c
@@ -191,14 +187,7 @@ public class AxiomVerifier<T extends java.lang.Number> {
         return true;
     }
 
-    ///// YENİ EKLENEN METOT SONU//////
-    /// 
-    /// 
-
-
-    ///YENİ EKLENEN METOT//////
-    /// 
-
+    
     /**
      * Negatif özelliğini kontrol eder: a.(-b) = (-a).b = -(a.b)
      */
@@ -226,12 +215,7 @@ public class AxiomVerifier<T extends java.lang.Number> {
         }
         return true;
     }    
-    /// YENİ EKLENEN METOT SONU//////
-
-
-
-
-    // Mevcut verifyAll metodunu sil ve yerine bunu yapıştır.
+    
 
     public VerificationResult verifyAll() {
         VerificationResult result = new VerificationResult();
