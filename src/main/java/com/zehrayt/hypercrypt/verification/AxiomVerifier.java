@@ -23,21 +23,22 @@ public class AxiomVerifier<T extends java.lang.Number> {
     private final BiFunction<T, T, T> standardAddition;
     private final Function<T, T> standardNegation;
 
-    //public AxiomVerifier(Set<T> baseSet, BiFunction<T, T, Set<T>> hyperOperation) {
-    //    this.baseSet = baseSet;
-    //    this.hyperOperation = hyperOperation;
-    //    this.baseSetAsList = new java.util.ArrayList<>(baseSet);
-    //}
-
     public AxiomVerifier(Set<T> baseSet, BiFunction<T, T, Set<T>> hyperMultiplication) {
         this.baseSet = baseSet;
         this.hyperMultiplication = hyperMultiplication;
 
-        // Toplama ve negatif almayı tamsayılar için sabitliyoruz.
-        // Bu, (R,+)'nın değişmeli grup olduğu varsayımımızdır.
-        this.standardAddition = (a, b) -> (T) Integer.valueOf(a.intValue() + b.intValue());
-        this.standardNegation = (a) -> (T) Integer.valueOf(-a.intValue());
+        // DÜZELTME: Hakem 3'ün "Sonlu kümelerde (Z/nZ) toplama nasıl çalışıyor?" uyarısı çözüldü.
+        // Standart tam sayı toplaması yerine, kümenin boyutuna (n) göre Modüler Aritmetik kullanıyoruz.
+        int n = baseSet.size();
+
+        // Modüler Toplama: (a + b) % n
+        this.standardAddition = (a, b) -> (T) Integer.valueOf((a.intValue() + b.intValue()) % n);
+        
+        // Modüler Negatif Alma: (-a) % n
+        // Not: Java'da % operatörü negatif sonuç verebildiği için gerçek matematiksel modülü şu formülle buluyoruz: (-a % n + n) % n
+        this.standardNegation = (a) -> (T) Integer.valueOf(((-a.intValue()) % n + n) % n);
     }
+    
 
     /**
      * Kapanıklık (Closure) ve Boş Küme Kontrolü
