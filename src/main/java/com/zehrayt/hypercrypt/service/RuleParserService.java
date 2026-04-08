@@ -15,9 +15,27 @@ import java.util.function.BiFunction;
 @Service
 public class RuleParserService {
 
+    // GÜVENLİK ADIMI 1: Tehlikeli kelimeleri (Kara Liste) filtreleyen metod (Hakem 3 uyarısı)
+    private boolean isSafeRule(String rule) {
+        String lowerRule = rule.toLowerCase();
+        // Java reflection, eval ve işletim sistemi komutlarını engelle
+        String[] forbiddenKeywords = {"java", "system", "eval", "function", "process", "require", "import", "exec", "class"};
+        for (String keyword : forbiddenKeywords) {
+            if (lowerRule.contains(keyword)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     public BiFunction<Integer, Integer, Set<Integer>> parseRule(String ruleString, Map<String, Object> constants) {
         if (ruleString == null || ruleString.isBlank()) {
             throw new InvalidRuleException("Kural metni boş olamaz.");
+        }
+
+        // Kuralı çalıştırmadan önce güvenlik filtresinden geçir
+        if (!isSafeRule(ruleString)) {
+            throw new InvalidRuleException("Güvenlik ihlali: Kural metninde izin verilmeyen zararlı komutlar tespit edildi.");
         }
 
         final String functionWrapper = String.format("function(a, b) { return %s; }", ruleString);
@@ -25,11 +43,19 @@ public class RuleParserService {
         // Bu, daha sonra kullanılacak olan ana scope (çalışma alanı).
         final Scriptable mainScope;
 
-        // --- DÜZELTME BAŞLANGICI: Derleme işlemini dışarı alıyoruz ---
+        // Derleme işlemini dışarı alıyoruz
         Context rhinoContext = Context.enter();
         try {
             rhinoContext.setOptimizationLevel(-1);
-            mainScope = rhinoContext.initStandardObjects();
+
+            // GÜVENLİK ADIMI 2: initStandardObjects YERİNE "initSafeStandardObjects" KULLANIMI
+            // Bu metot, Rhino motorunun Java sınıflarına (Packages, java.lang vb.) erişimini tamamen kapatır.
+            mainScope = rhinoContext.initSafeStandardObjects();
+
+             // Kuralda kullanılabilecek sabitleri scope'a ekleyelim.
+             // Örneğin, 'n' veya 'p' gibi sabitler kuralda kullanılabilir.
+             // Bu sabitler, frontend tarafından sağlanabilir ve burada güvenli bir şekilde tanımlanır.
+             // Böylece kullanıcı, kuralında 'n' veya 'p' gibi değişkenler kullanabilir ve bunların değerlerini de belirleyebilir.
 
             // Sabitleri scope'a burada ekliyoruz.
             if (constants != null) {
@@ -48,7 +74,6 @@ public class RuleParserService {
         } finally {
             Context.exit();
         }
-        // --- DÜZELTME BİTİŞİ ---
 
         return (a, b) -> {
             Context executionContext = Context.enter();

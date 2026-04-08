@@ -40,6 +40,32 @@ public class AxiomVerifier<T extends java.lang.Number> {
     }
 
     /**
+     * Kapanıklık (Closure) ve Boş Küme Kontrolü
+     * Hiper-işlemin sonucu boş olamaz ve baseSet dışına çıkamaz.
+     */
+    public boolean checkClosure() {
+        System.out.println("Checking for closure...");
+        for (T a : baseSet) {
+            for (T b : baseSet) {
+                Set<T> result = hyperMultiplication.apply(a, b);
+                
+                // Kural 1: Sonuç boş küme olamaz
+                if (result == null || result.isEmpty()) {
+                    System.out.println("Closure failed: Result is empty for (a,b) = (" + a + "," + b + ")");
+                    return false;
+                }
+                
+                // Kural 2: Sonuç, baseSet'in bir alt kümesi olmalıdır
+                if (!baseSet.containsAll(result)) {
+                    System.out.println("Closure failed: Result contains elements outside baseSet for (a,b) = (" + a + "," + b + ")");
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+
+    /**
      * Birleşme özelliğini kontrol eder: (a ο b) ο c = a ο (b ο c)
      * Bu, kümedeki tüm (a, b, c) üçlüleri için kontrol edilmelidir.
      * @return Birleşme özelliği sağlanıyorsa true, aksi halde false.
@@ -142,7 +168,22 @@ public class AxiomVerifier<T extends java.lang.Number> {
                         return false;
                     }
                     
-                    // TODO: Sağdan dağılma ((b+c)*a ⊆ b*a + c*a) da benzer şekilde kontrol edilebilir.
+                    // --- SAĞDAN DAĞILMA: (b + c) * a ⊆ b*a + c*a ---
+                    Set<T> leftSideResultR = hyperMultiplication.apply(b_plus_c, a);
+                    Set<T> b_mult_a = hyperMultiplication.apply(b, a);
+                    Set<T> c_mult_a = hyperMultiplication.apply(c, a);
+
+                    Set<T> rightSideResultR = new HashSet<>();
+                    for (T x : b_mult_a) {
+                        for (T y : c_mult_a) {
+                            rightSideResultR.add(standardAddition.apply(x, y));
+                        }
+                    }
+
+                    if (!rightSideResultR.containsAll(leftSideResultR)) {
+                        System.out.println("Right distributivity failed for (a,b,c) = (" + a + "," + b + "," + c + ")");
+                        return false;
+                    }
                 }
             }
         }
@@ -193,8 +234,24 @@ public class AxiomVerifier<T extends java.lang.Number> {
 
     public VerificationResult verifyAll() {
         VerificationResult result = new VerificationResult();
+
+        // 1. Kapanıklık Kontrolü (Closure)
+        boolean isClosed = checkClosure();
+        result.setHypergroupoid(isClosed);
+
+        // Kapanıklık yoksa diğer testleri yapmadan işlemi bitir
+        if (!isClosed) {
+            result.setHighestStructure("Tanımsız Yapı (Kapanıklık Sağlanmıyor)");
+            result.setFailingAxiom("Kapanıklık (Closure)");
+            result.setSemihypergroup(false);
+            result.setQuasihypergroup(false);
+            result.setDistributive(false);
+            result.setHasNegativeProperty(false);
+            result.setHypergroup(false);
+            return result;
+        }
         
-        // --- HER BİR AKSIYOMU TEST EDİP SONUCUNU BİR DEĞİŞKENDE SAKLA ---
+        // 2. Kapanıklık sağlandıysa diğer aksiyomları test et ve sonucunu bir değişkende sakla.
         boolean isAssociative = isAssociative();
         boolean isDistributive = checkDistributivity();
         boolean hasNegativeProperty = checkNegativeProperty();

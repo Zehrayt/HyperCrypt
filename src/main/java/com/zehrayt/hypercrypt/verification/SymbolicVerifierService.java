@@ -133,11 +133,11 @@ public class SymbolicVerifierService {
                 isSolvable = true;
             } else if (trimmedRule.equals("a*b") || trimmedRule.equals("a * b")) {
                 // Denklem: a * x = y => x = y / a.
-                if ("RATIONALS".equalsIgnoreCase(domain)) {
-                    isSolvable = true; // Rasyonellerde çözülür (a ≠ 0).
-                } else {
-                    isSolvable = false; // Tamsayılarda her zaman çözülemez.
-                }
+                // DÜZELTME: Eğer küme '0' elemanını içeriyorsa (Integers ve Rationals içerir),
+                // a=0 ve y≠0 olduğunda bu denklemin çözümü yoktur (0 * x = y olamaz).
+                // Dolayısıyla standart a*b kuralı tam sayılarda da rasyonellerde de genel bir üretim aksiyomu (aH=H) SAĞLAMAZ.
+                isSolvable = false; 
+                result.setSuggestion("The equation a*x=y has no solution when a=0 and y≠0. Reproduction axiom fails for standard multiplication on domains containing zero.");
             }
 
             // Sonucu ayarla

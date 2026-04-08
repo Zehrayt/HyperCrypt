@@ -3,6 +3,7 @@ package com.zehrayt.hypercrypt.service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.Collections;
 import java.util.Map;
 import java.util.Set;
 
@@ -45,6 +46,10 @@ public class CryptoService {
         if (resultSet.isEmpty()) {
             throw new IllegalStateException("Kriptografik işlem boş bir sonuç kümesi üretti.");
         }
-        return resultSet.iterator().next();
+        
+        //return resultSet.iterator().next();
+
+        // (Not: Bu bir eğitim simülasyonu olduğu için hash fonksiyonu yerine en büyük eleman seçilmiştir.)
+        return Collections.max(resultSet);
     }
 }

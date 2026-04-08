@@ -13,7 +13,7 @@ public class GeminiSuggestionService {
     // --- ÇOK ÖNEMLİ: API ANAHTARINI GÜVENLİ YÖNETME ---
     private final String apiKey = System.getenv("GEMINI_API_KEY");
     
-    private static final String GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=";
+    private static final String GEMINI_API_URL = "";
 
     private final RestTemplate restTemplate;
 
