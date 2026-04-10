@@ -17,7 +17,12 @@ public class GeminiSuggestionService {
     private final RestTemplate restTemplate;
 
     public GeminiSuggestionService() {
-        this.restTemplate = new RestTemplate();
+        // Yapay zeka cevap vermezse sistemi kilitletmemek için 5 saniyelik sınır koyuyoruz.
+        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(5000); // 5 saniyede bağlanamazsa iptal et
+        factory.setReadTimeout(5000);    // 5 saniye içinde cevap gelmezse iptal et
+        
+        this.restTemplate = new RestTemplate(factory);
     }
 
     /**
