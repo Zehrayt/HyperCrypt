@@ -14,7 +14,7 @@ public class GeminiSuggestionService {
     private final String apiKey = System.getenv("GEMINI_API_KEY");
     
     // Model adını 2.0-flash olarak güncelledim
-    private static final String GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=";
+    private static final String GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=";
 
     private final RestTemplate restTemplate;
 
