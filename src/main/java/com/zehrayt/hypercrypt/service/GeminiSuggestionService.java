@@ -10,10 +10,9 @@ import com.fasterxml.jackson.databind.JsonNode;
 @Service // Bu sınıfın bir Spring servisi olduğunu belirtiyoruz.
 public class GeminiSuggestionService {
 
-    // --- ÇOK ÖNEMLİ: API ANAHTARINI GÜVENLİ YÖNETME ---
     private final String apiKey = System.getenv("GEMINI_API_KEY");
     
-    private static final String GEMINI_API_URL = "";
+    private static final String GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=";
 
     private final RestTemplate restTemplate;
 
@@ -58,7 +57,7 @@ public class GeminiSuggestionService {
                 }]
             }]
         }
-        """.formatted(prompt.replace("\"", "\\\"")); // Prompt içindeki tırnak işaretlerinden kaçınıyoruz.
+        """.formatted(prompt.replace("\"", "\\\"").replace("\n", "\\n")); 
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
