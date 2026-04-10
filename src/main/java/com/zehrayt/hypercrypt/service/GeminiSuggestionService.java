@@ -20,8 +20,8 @@ public class GeminiSuggestionService {
 
     public GeminiSuggestionService() {
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
-        factory.setConnectTimeout(5000); 
-        factory.setReadTimeout(5000);   
+        factory.setConnectTimeout(10000); // 10 saniye bağlanma süresi
+        factory.setReadTimeout(30000);
         
         this.restTemplate = new RestTemplate(factory);
     }
