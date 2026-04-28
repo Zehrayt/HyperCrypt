@@ -77,27 +77,44 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   // Custom Map Mod: Önizlemeyi güncelleme
+  // Custom Map Mod: Önizlemeyi güncelleme (DÖNGÜSEL ZİNCİRLEME - TAM SAYILAR KÜMESİ)
   function updateCustomPreview() {
     const message = customMessageInput.value.toUpperCase();
     const rule = customRuleInput.value;
     let encryptedPreview = '';
 
+    // Sadece değeri atanmış (klavyede yeşil yanan) harfleri zincire al
+    let validChars = [];
     for (const char of message) {
       if (keyMappings[char] !== undefined) {
-        let val = keyMappings[char];
+        validChars.push(char);
+      }
+    }
+
+    let resultIndex = 0;
+
+    for (const char of message) {
+      if (keyMappings[char] !== undefined) {
+        let a = keyMappings[char]; // Kullanıcının girdiği sayı (Örn: 1680)
+
+        // Zincirdeki BİR SONRAKİ harfi bul (Döngüsel)
+        let nextValidChar = validChars[(resultIndex + 1) % validChars.length];
+        let b = keyMappings[nextValidChar]; // Sonraki harfin sayısı (Örn: 500)
+
         try {
-          // Rule'ı güvenli bir şekilde değerlendirmek için geçici bir fonksiyon oluştur
-          // NOT: eval() kullanmak güvenlik riski taşır. Gerçek uygulamalarda daha güvenli bir parser/interpreter kullanılmalı.
-          const func = new Function('x', 'return ' + rule);
-          val = func(val);
+          // Kuralı 'a' ve 'b' değişkenleriyle çalıştır
+          const func = new Function('a', 'b', 'return ' + rule);
+          let result = func(a, b);
+          
+          // Mod 29'u SİLDİK! Sonuç 5 milyon bile çıksa direkt yazdırıyoruz.
+          encryptedPreview += `${result} `;
         } catch (e) {
           console.error("Kural hatası:", e);
-          encryptedPreview += `[HATA]`;
-          continue;
+          encryptedPreview += `[HATA] `;
         }
-        encryptedPreview += `${val} `;
+        resultIndex++;
       } else {
-        encryptedPreview += `${char} `; // Eşleşmeyen karakteri olduğu gibi bırak
+        encryptedPreview += `${char} `; // Boşlukları olduğu gibi bırak
       }
     }
     customEncryptedPreview.textContent = encryptedPreview.trim();
@@ -194,11 +211,13 @@ document.addEventListener('DOMContentLoaded', () => {
         <span class="message-content">${originalMessage}</span>
       </div>
       <div>
-        <span class="step-label">Şifrelenmiş Mesaj (Yolda):</span>
+        <span class="step-label">Şifrelenmiş Mesaj (Döngüsel Zincir):</span>
         <span class="message-content">${encryptedMessage}</span>
       </div>
       <div>
-        <span class="step-label">Alıcı Tarafında Çözümleme:</span>
+        <span class="step-label">Alıcı Tarafında Çözümleme (Decryption):</span>
+        <span class="message-content">Bu mesaj <strong>"Döngüsel Zincirleme"</strong> yöntemiyle şifrelenmiştir. Her harf bir sonrakine cebirsel olarak bağlıdır (Örn: a ο b).</span>
+        <span class="message-content">Alıcı, hiperyapı kurallarını ve matris çözümlemesini (veya bilinen ilk harfi) kullanarak zinciri geriye doğru çözer.</span>
         <span class="message-content">Mesaj alıcıya ulaştı ve '${rule}' kuralı ve bilinen anahtar haritalarıyla çözümlenecek.</span>
         <span class="message-content">Çözülen Mesaj: <strong>${originalMessage}</strong> (Basit simülasyon)</span>
       </div>
