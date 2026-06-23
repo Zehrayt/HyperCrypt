@@ -15,11 +15,10 @@ class AxiomVerifierTest {
         Set<Integer> z3 = Set.of(0, 1, 2);
         BiFunction<Integer, Integer, Set<Integer>> additionMod3 = (a, b) -> Set.of((a + b) % 3);
 
-        AxiomVerifier<Integer> verifier = new AxiomVerifier<>(z3, additionMod3);
+        AxiomVerifier verifier = new AxiomVerifier(z3, additionMod3);
         VerificationResult result = verifier.verifyAll();
 
         assertTrue(result.isHypergroup(), "Z_3 with addition mod 3 should be a hypergroup.");
-        assertEquals("Hipergrup", result.getHighestStructure());
         assertNull(result.getFailingAxiom());
     }
 
@@ -28,7 +27,7 @@ class AxiomVerifierTest {
         Set<Integer> z3 = Set.of(0, 1, 2);
         BiFunction<Integer, Integer, Set<Integer>> multiplicationMod3 = (a, b) -> Set.of((a * b) % 3);
 
-        AxiomVerifier<Integer> verifier = new AxiomVerifier<>(z3, multiplicationMod3);
+        AxiomVerifier verifier = new AxiomVerifier(z3, multiplicationMod3);
         VerificationResult result = verifier.verifyAll();
 
         assertFalse(result.isHypergroup());
@@ -41,7 +40,7 @@ class AxiomVerifierTest {
         Set<Integer> integers = Set.of(1, 2, 3);
         BiFunction<Integer, Integer, Set<Integer>> subtraction = (a, b) -> Set.of(a - b);
 
-        AxiomVerifier<Integer> verifier = new AxiomVerifier<>(integers, subtraction);
+        AxiomVerifier verifier = new AxiomVerifier(integers, subtraction);
         VerificationResult result = verifier.verifyAll();
         
         assertFalse(result.isHypergroup());

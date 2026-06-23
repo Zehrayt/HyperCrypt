@@ -17,9 +17,10 @@ import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
+// İzin verilen origin'ler merkezi olarak config/WebConfig.java üzerinden (app.cors.allowed-origins property'si
+// ile) yönetiliyor; bu sayede her endpoint'te ayrı ayrı "*" yazma riski ortadan kalkıyor.
 @RestController
 @RequestMapping("/api")
-@CrossOrigin(origins = "*")
 public class VerificationController {
 
     private final GeminiSuggestionService suggestionService;
@@ -34,6 +35,11 @@ public class VerificationController {
         this.ruleParserService = ruleParserService;
         this.symbolicVerifierService = symbolicVerifierService;
     }
+
+    // DoS koruması: AxiomVerifier'ın birleşme/dağılma testleri O(n^3)
+    // çalışır. Sınırsız büyüklükte bir baseSet kabul etmek, sunucu CPU'sunu
+    // kilitleyebilecek bir hizmet engelleme (DoS) vektörü oluşturur.
+    private static final int MAX_BASE_SET_SIZE = 100;
 
     public static class VerificationRequest {
         public Set<Integer> baseSet; // Sonlu küme
@@ -52,6 +58,15 @@ public class VerificationController {
                 return ResponseEntity.ok(result);
             } 
             else if (request.baseSet != null && !request.baseSet.isEmpty()) {
+
+                // 0. Adım: Boyut sınırı kontrolü (DoS koruması).
+                if (request.baseSet.size() > MAX_BASE_SET_SIZE) {
+                    return ResponseEntity.badRequest().body(Map.of(
+                        "error", String.format(
+                            "Sonlu küme boyutu çok büyük (%d). En fazla %d eleman desteklenmektedir.",
+                            request.baseSet.size(), MAX_BASE_SET_SIZE)
+                    ));
+                }
 
                 // 1. Kuralın içinde standart çarpma (*) içerip içermediğini kontrol et.
                 if (request.rule == null || !request.rule.contains("*")) {
@@ -78,7 +93,7 @@ public class VerificationController {
                     ruleParserService.parseRule(request.rule, ruleConstants);
                 
                 // 4. Adım: Aksiyom motorunu bu fonksiyonla çalıştır
-                AxiomVerifier<Integer> verifier = new AxiomVerifier<>(request.baseSet, operation);
+                AxiomVerifier verifier = new AxiomVerifier(request.baseSet, operation);
                 VerificationResult result = verifier.verifyAll();
 
                 Map<String, Map<String, String>> tableData = new LinkedHashMap<>(); // Sırayı korumak için LinkedHashMap

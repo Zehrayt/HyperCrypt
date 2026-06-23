@@ -7,6 +7,9 @@ import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 
 @Service
 public class GeminiSuggestionService {
@@ -17,12 +20,13 @@ public class GeminiSuggestionService {
     private static final String GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=";
 
     private final RestTemplate restTemplate;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     public GeminiSuggestionService() {
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
         factory.setConnectTimeout(10000); // 10 saniye bağlanma süresi
         factory.setReadTimeout(30000);
-        
+
         this.restTemplate = new RestTemplate(factory);
     }
 
@@ -44,15 +48,21 @@ public class GeminiSuggestionService {
             baseSet, rule, failingAxiom, failingAxiom
         );
 
-        String requestBody = """
-        {
-            "contents": [{
-                "parts": [{
-                    "text": "%s"
-                }]
-            }]
+        
+        // JSON gövdesi Jackson ObjectMapper/ObjectNode ile inşa ediliyor.
+        ObjectNode requestBodyNode = objectMapper.createObjectNode();
+        ArrayNode contentsArray = requestBodyNode.putArray("contents");
+        ObjectNode contentNode = contentsArray.addObject();
+        ArrayNode partsArray = contentNode.putArray("parts");
+        partsArray.addObject().put("text", prompt);
+
+        String requestBody;
+        try {
+            requestBody = objectMapper.writeValueAsString(requestBodyNode);
+        } catch (Exception e) {
+            System.err.println("Error while serializing Gemini request body: " + e.getMessage());
+            return "AI suggestion could not be retrieved at this time.";
         }
-        """.formatted(prompt.replace("\"", "\\\"").replace("\n", "\\n"));
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);

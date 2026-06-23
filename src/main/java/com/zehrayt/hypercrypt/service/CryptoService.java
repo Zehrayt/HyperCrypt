@@ -3,7 +3,13 @@ package com.zehrayt.hypercrypt.service;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.math.BigInteger;
+import java.nio.ByteBuffer;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+import java.util.ArrayList;
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -25,31 +31,51 @@ public class CryptoService {
      * @return Kriptografik amaçla kullanılan tek bir tamsayı sonucu.
      */
     public Integer calculate(String rule, int base, int exponent, int modulus) {
-        // RuleParser'a gönderilecek sabitler: 'n' ve 'b' yerine 'exponent' değeri
-        Map<String, Object> constants = Map.of("n", modulus); 
-        
-        // Kuralı parse et ve 'a' ve 'b' yerine değerleri koyarak hesapla.
-        // NOT: Frontend'deki kod 'Math.pow(a, b) % p' gibi klasik formüller kullanacak.
-        // Bizim motorumuz bunu 'a' ve 'b' değişkenleriyle çalıştıracak.
-        
-        // Buradaki 'b' değeri kuralın içinde 'exponent' olarak kullanıldığı için,
-        // bizim kuralı manipüle etmemiz gerekiyor: rule.replace("b", String.valueOf(exponent))
+        // RuleParser'a gönderilecek sabitler.
+        Map<String, Object> constants = Map.of("n", modulus);
 
-        // * BASİT AMA GÜVENİLİR YAKLAŞIM *
-        // Kural metnini, a yerine base, b yerine exponent gelecek şekilde değiştirip RuleParser'a gönderelim.
-        String finalRule = rule.replace("a", String.valueOf(base)).replace("b", String.valueOf(exponent));
         
-        // Şimdi RuleParser'a sadece tek bir sayı hesaplamasını söyleyelim.
-        // Bu, kuralın kendisi (Math.pow(a, b)%p) tek bir sonuç döndüreceği için güvenlidir.
-        Set<Integer> resultSet = ruleParserService.parseRule(finalRule, constants).apply(1, 1); 
+        // RuleParserService zaten 'a' ve 'b'yi
+        // gerçek fonksiyon parametresi olarak bağlıyor; bu yüzden kuralı hiç string olarak
+        // değiştirmeden, doğrudan base/exponent değerleriyle çalıştırıyoruz.
+        Set<Integer> resultSet = ruleParserService.parseRule(rule, constants).apply(base, exponent);
 
         if (resultSet.isEmpty()) {
             throw new IllegalStateException("Kriptografik işlem boş bir sonuç kümesi üretti.");
         }
-        
-        //return resultSet.iterator().next();
 
-        // (Not: Bu bir eğitim simülasyonu olduğu için hash fonksiyonu yerine en büyük eleman seçilmiştir.)
-        return Collections.max(resultSet);
+        return deriveSharedValue(resultSet, modulus);
+    }
+
+    /**
+     * Hiper-işlemin sonuç kümesinden tek bir paylaşılan değer türetir.
+     *
+     * DÜZELTME: Önceki yaklaşım Collections.max(resultSet) ile en büyük elemanı
+     * seçiyordu. Bu seçim deterministik ama kriptografik olarak öngörülebilir ve
+     * yanlıydı (küçük kümelerde sonuç kolayca tahmin edilebilir). Bunun yerine,
+     * kümenin tüm elemanlarını SHA-256 ile karıştırıp modulus'a indirgeyerek
+     * daha az öngörülebilir, hâlâ deterministik bir değer üretiyoruz.
+     */
+    private int deriveSharedValue(Set<Integer> resultSet, int modulus) {
+        try {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+
+            // Kümeyi sıralayarak hash girdisinin eleman sırasından bağımsız,
+            // her zaman aynı şekilde üretilmesini garanti ediyoruz.
+            List<Integer> sortedValues = new ArrayList<>(resultSet);
+            Collections.sort(sortedValues);
+            for (Integer value : sortedValues) {
+                digest.update(ByteBuffer.allocate(Integer.BYTES).putInt(value).array());
+            }
+
+            byte[] hashBytes = digest.digest();
+            BigInteger hashValue = new BigInteger(1, hashBytes);
+
+            int safeModulus = modulus > 0 ? modulus : 1;
+            return hashValue.mod(BigInteger.valueOf(safeModulus)).intValue();
+        } catch (NoSuchAlgorithmException e) {
+            // SHA-256 her standart JVM'de garanti olarak bulunur; pratikte buraya düşülmez.
+            throw new IllegalStateException("SHA-256 algoritması bu ortamda bulunamadı.", e);
+        }
     }
 }

@@ -1,29 +1,24 @@
 package com.zehrayt.hypercrypt.verification;
 
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.function.BiFunction;
-import java.util.stream.Collectors;
 import java.util.function.Function;
 
 import com.zehrayt.hypercrypt.dtos.VerificationResult;
 
-public class AxiomVerifier<T extends java.lang.Number> {
+
+public class AxiomVerifier {
 
     // Hiper-işlemi temsil eden fonksiyonel arayüz
-    // İki eleman alır (T, T), bir küme döndürür (Set<T>)
-    //private final BiFunction<T, T, Set<T>> hyperOperation;
+    // İki eleman alır (Integer, Integer), bir küme döndürür (Set<Integer>)
+    private final BiFunction<Integer, Integer, Set<Integer>> hyperMultiplication;
+    private final Set<Integer> baseSet;
 
-    private final BiFunction<T, T, Set<T>> hyperMultiplication;
-    private final Set<T> baseSet;
+    private final BiFunction<Integer, Integer, Integer> standardAddition;
+    private final Function<Integer, Integer> standardNegation;
 
-    //private final List<T> baseSetAsList; //////////////////////////// Kombinasyonlar için listeye ihtiyacımız olacak
-
-    private final BiFunction<T, T, T> standardAddition;
-    private final Function<T, T> standardNegation;
-
-    public AxiomVerifier(Set<T> baseSet, BiFunction<T, T, Set<T>> hyperMultiplication) {
+    public AxiomVerifier(Set<Integer> baseSet, BiFunction<Integer, Integer, Set<Integer>> hyperMultiplication) {
         this.baseSet = baseSet;
         this.hyperMultiplication = hyperMultiplication;
 
@@ -32,13 +27,13 @@ public class AxiomVerifier<T extends java.lang.Number> {
         int n = baseSet.size();
 
         // Modüler Toplama: (a + b) % n
-        this.standardAddition = (a, b) -> (T) Integer.valueOf((a.intValue() + b.intValue()) % n);
-        
+        this.standardAddition = (a, b) -> (a.intValue() + b.intValue()) % n;
+
         // Modüler Negatif Alma: (-a) % n
         // Not: Java'da % operatörü negatif sonuç verebildiği için gerçek matematiksel modülü şu formülle buluyoruz: (-a % n + n) % n
-        this.standardNegation = (a) -> (T) Integer.valueOf(((-a.intValue()) % n + n) % n);
+        this.standardNegation = (a) -> ((-a.intValue()) % n + n) % n;
     }
-    
+
 
     /**
      * Kapanıklık (Closure) ve Boş Küme Kontrolü
@@ -46,16 +41,16 @@ public class AxiomVerifier<T extends java.lang.Number> {
      */
     public boolean checkClosure() {
         System.out.println("Checking for closure...");
-        for (T a : baseSet) {
-            for (T b : baseSet) {
-                Set<T> result = hyperMultiplication.apply(a, b);
-                
+        for (Integer a : baseSet) {
+            for (Integer b : baseSet) {
+                Set<Integer> result = hyperMultiplication.apply(a, b);
+
                 // Kural 1: Sonuç boş küme olamaz
                 if (result == null || result.isEmpty()) {
                     System.out.println("Closure failed: Result is empty for (a,b) = (" + a + "," + b + ")");
                     return false;
                 }
-                
+
                 // Kural 2: Sonuç, baseSet'in bir alt kümesi olmalıdır
                 if (!baseSet.containsAll(result)) {
                     System.out.println("Closure failed: Result contains elements outside baseSet for (a,b) = (" + a + "," + b + ")");
@@ -74,20 +69,20 @@ public class AxiomVerifier<T extends java.lang.Number> {
     public boolean isAssociative() {
         System.out.println("Checking for associativity...");
         // Kümedeki tüm olası (a, b, c) üçlülerini denememiz gerekiyor.
-        for (T a : baseSet) {
-            for (T b : baseSet) {
-                for (T c : baseSet) {
+        for (Integer a : baseSet) {
+            for (Integer b : baseSet) {
+                for (Integer c : baseSet) {
                     // Sol Taraf: (a ο b) ο c
-                    Set<T> leftSideResult = new HashSet<>();
-                    Set<T> firstOpResult = hyperMultiplication.apply(a, b);
-                    for (T intermediateResult : firstOpResult) {
+                    Set<Integer> leftSideResult = new HashSet<>();
+                    Set<Integer> firstOpResult = hyperMultiplication.apply(a, b);
+                    for (Integer intermediateResult : firstOpResult) {
                         leftSideResult.addAll(hyperMultiplication.apply(intermediateResult, c));
                     }
 
                     // Sağ Taraf: a ο (b ο c)
-                    Set<T> rightSideResult = new HashSet<>();
-                    Set<T> secondOpResult = hyperMultiplication.apply(b, c);
-                    for (T intermediateResult : secondOpResult) {
+                    Set<Integer> rightSideResult = new HashSet<>();
+                    Set<Integer> secondOpResult = hyperMultiplication.apply(b, c);
+                    for (Integer intermediateResult : secondOpResult) {
                         rightSideResult.addAll(hyperMultiplication.apply(a, intermediateResult));
                     }
 
@@ -111,10 +106,10 @@ public class AxiomVerifier<T extends java.lang.Number> {
      */
     public boolean checkReproductionAxiom() {
         System.out.println("Checking for reproduction axiom...");
-        for (T a : baseSet) {
+        for (Integer a : baseSet) {
             // a ο H kontrolü
-            Set<T> leftResult = new HashSet<>();
-            for (T h : baseSet) {
+            Set<Integer> leftResult = new HashSet<>();
+            for (Integer h : baseSet) {
                 leftResult.addAll(hyperMultiplication.apply(a, h));
             }
             if (!leftResult.equals(baseSet)) {
@@ -123,8 +118,8 @@ public class AxiomVerifier<T extends java.lang.Number> {
             }
 
             // H ο a kontrolü
-            Set<T> rightResult = new HashSet<>();
-            for (T h : baseSet) {
+            Set<Integer> rightResult = new HashSet<>();
+            for (Integer h : baseSet) {
                 rightResult.addAll(hyperMultiplication.apply(h, a));
             }
             if (!rightResult.equals(baseSet)) {
@@ -141,20 +136,20 @@ public class AxiomVerifier<T extends java.lang.Number> {
      */
     public boolean checkDistributivity() {
         System.out.println("Checking for distributivity...");
-        for (T a : baseSet) {
-            for (T b : baseSet) {
-                for (T c : baseSet) {
+        for (Integer a : baseSet) {
+            for (Integer b : baseSet) {
+                for (Integer c : baseSet) {
                     // Sol Taraf: a * (b + c)
-                    T b_plus_c = standardAddition.apply(b, c);
-                    Set<T> leftSideResult = hyperMultiplication.apply(a, b_plus_c);
+                    Integer b_plus_c = standardAddition.apply(b, c);
+                    Set<Integer> leftSideResult = hyperMultiplication.apply(a, b_plus_c);
 
                     // Sağ Taraf: a*b + a*c
-                    Set<T> a_mult_b = hyperMultiplication.apply(a, b);
-                    Set<T> a_mult_c = hyperMultiplication.apply(a, c);
+                    Set<Integer> a_mult_b = hyperMultiplication.apply(a, b);
+                    Set<Integer> a_mult_c = hyperMultiplication.apply(a, c);
 
-                    Set<T> rightSideResult = new HashSet<>();
-                    for (T x : a_mult_b) {
-                        for (T y : a_mult_c) {
+                    Set<Integer> rightSideResult = new HashSet<>();
+                    for (Integer x : a_mult_b) {
+                        for (Integer y : a_mult_c) {
                             rightSideResult.add(standardAddition.apply(x, y));
                         }
                     }
@@ -164,15 +159,15 @@ public class AxiomVerifier<T extends java.lang.Number> {
                         System.out.println("Distributivity failed for (a,b,c) = (" + a + "," + b + "," + c + ")");
                         return false;
                     }
-                    
-                    // --- SAĞDAN DAĞILMA: (b + c) * a ⊆ b*a + c*a ---
-                    Set<T> leftSideResultR = hyperMultiplication.apply(b_plus_c, a);
-                    Set<T> b_mult_a = hyperMultiplication.apply(b, a);
-                    Set<T> c_mult_a = hyperMultiplication.apply(c, a);
 
-                    Set<T> rightSideResultR = new HashSet<>();
-                    for (T x : b_mult_a) {
-                        for (T y : c_mult_a) {
+                    // --- SAĞDAN DAĞILMA: (b + c) * a ⊆ b*a + c*a ---
+                    Set<Integer> leftSideResultR = hyperMultiplication.apply(b_plus_c, a);
+                    Set<Integer> b_mult_a = hyperMultiplication.apply(b, a);
+                    Set<Integer> c_mult_a = hyperMultiplication.apply(c, a);
+
+                    Set<Integer> rightSideResultR = new HashSet<>();
+                    for (Integer x : b_mult_a) {
+                        for (Integer y : c_mult_a) {
                             rightSideResultR.add(standardAddition.apply(x, y));
                         }
                     }
@@ -187,23 +182,23 @@ public class AxiomVerifier<T extends java.lang.Number> {
         return true;
     }
 
-    
+
     /**
      * Negatif özelliğini kontrol eder: a.(-b) = (-a).b = -(a.b)
      */
     public boolean checkNegativeProperty() {
         System.out.println("Checking for negative property...");
-        for (T a : baseSet) {
-            for (T b : baseSet) {
-                T negB = standardNegation.apply(b);
-                T negA = standardNegation.apply(a);
+        for (Integer a : baseSet) {
+            for (Integer b : baseSet) {
+                Integer negB = standardNegation.apply(b);
+                Integer negA = standardNegation.apply(a);
 
-                Set<T> res1 = hyperMultiplication.apply(a, negB);     // a.(-b)
-                Set<T> res2 = hyperMultiplication.apply(negA, b);     // (-a).b
-                
-                Set<T> a_mult_b = hyperMultiplication.apply(a, b);   // a.b
-                Set<T> res3 = new HashSet<>();                     // -(a.b)
-                for (T x : a_mult_b) {
+                Set<Integer> res1 = hyperMultiplication.apply(a, negB);     // a.(-b)
+                Set<Integer> res2 = hyperMultiplication.apply(negA, b);     // (-a).b
+
+                Set<Integer> a_mult_b = hyperMultiplication.apply(a, b);   // a.b
+                Set<Integer> res3 = new HashSet<>();                     // -(a.b)
+                for (Integer x : a_mult_b) {
                     res3.add(standardNegation.apply(x));
                 }
 
@@ -214,8 +209,8 @@ public class AxiomVerifier<T extends java.lang.Number> {
             }
         }
         return true;
-    }    
-    
+    }
+
 
     public VerificationResult verifyAll() {
         VerificationResult result = new VerificationResult();
@@ -235,19 +230,19 @@ public class AxiomVerifier<T extends java.lang.Number> {
             result.setHypergroup(false);
             return result;
         }
-        
+
         // 2. Kapanıklık sağlandıysa diğer aksiyomları test et ve sonucunu bir değişkende sakla.
         boolean isAssociative = isAssociative();
         boolean isDistributive = checkDistributivity();
         boolean hasNegativeProperty = checkNegativeProperty();
         boolean isQuasihypergroup = checkReproductionAxiom();
-        
+
         // --- SONUÇLARI DTO'YA NET BİR ŞEKİLDE YAZ ---
         result.setSemihypergroup(isAssociative);
         result.setQuasihypergroup(isQuasihypergroup);
         result.setDistributive(isDistributive);
         result.setHasNegativeProperty(hasNegativeProperty);
-        
+
         boolean isHypergroup = isAssociative && isQuasihypergroup;
         result.setHypergroup(isHypergroup);
 
@@ -277,7 +272,7 @@ public class AxiomVerifier<T extends java.lang.Number> {
                 result.setHighestStructure(isMultiplicativeHyperring ? "Çarpımsal Hiperhalka" : "Yarı Hipergrup (ama Hiperhalka değil)");
             }
         }
-        
+
         return result;
     }
 }

@@ -2,6 +2,7 @@ package com.zehrayt.hypercrypt.service;
 
 import com.zehrayt.hypercrypt.exception.InvalidRuleException;
 import org.mozilla.javascript.Context;
+import org.mozilla.javascript.ContextFactory;
 import org.mozilla.javascript.Function;
 import org.mozilla.javascript.NativeArray;
 import org.mozilla.javascript.Scriptable;
@@ -14,6 +15,27 @@ import java.util.function.BiFunction;
 
 @Service
 public class RuleParserService {
+
+    // DoS koruması: Standart Context.enter() ile çalışan bir Rhino scripti
+    // süresiz bir döngüye girerse (örn. "(()=>{while(true){}})()" kara listedeki
+    // "function" kelimesini içermez ama sonsuz döngüdür) sunucu thread'i sonsuza
+    // kadar kilitlenir. Bu özel ContextFactory, belirli bir komut (instruction) sayısı
+    // aşıldığında scripti zorla durdurur.
+    private static final int MAX_INSTRUCTIONS = 1_000_000;
+
+    private static final ContextFactory SAFE_CONTEXT_FACTORY = new ContextFactory() {
+        @Override
+        protected void observeInstructionCount(Context cx, int instructionCount) {
+            throw new InvalidRuleException(
+                "Kural çalışma süresi sınırını aştı (olası sonsuz döngü). Kuralı basitleştirip tekrar deneyin.");
+        }
+    };
+
+    private Context enterSafeContext() {
+        Context cx = SAFE_CONTEXT_FACTORY.enterContext();
+        cx.setInstructionObserverThreshold(MAX_INSTRUCTIONS);
+        return cx;
+    }
 
     // GÜVENLİK ADIMI 1: Tehlikeli kelimeleri (Kara Liste) filtreleyen metod (Hakem 3 uyarısı)
     private boolean isSafeRule(String rule) {
@@ -39,12 +61,12 @@ public class RuleParserService {
         }
 
         final String functionWrapper = String.format("function(a, b) { return %s; }", ruleString);
-        
+
         // Bu, daha sonra kullanılacak olan ana scope (çalışma alanı).
         final Scriptable mainScope;
 
         // Derleme işlemini dışarı alıyoruz
-        Context rhinoContext = Context.enter();
+        Context rhinoContext = enterSafeContext();
         try {
             rhinoContext.setOptimizationLevel(-1);
 
@@ -64,11 +86,13 @@ public class RuleParserService {
                     mainScope.put(entry.getKey(), mainScope, jsValue);
                 }
             }
-            
+
             // Kuralın sözdizimini burada, en başta kontrol ediyoruz.
             // Eğer "a +* b" gibi bir hata varsa, Exception burada fırlatılacak.
             rhinoContext.compileFunction(mainScope, functionWrapper, "rule", 1, null);
 
+        } catch (InvalidRuleException e) {
+            throw e;
         } catch (Exception e) {
             throw new InvalidRuleException("Kuralda sözdizimi hatası var: " + e.getMessage());
         } finally {
@@ -76,12 +100,12 @@ public class RuleParserService {
         }
 
         return (a, b) -> {
-            Context executionContext = Context.enter();
+            Context executionContext = enterSafeContext();
             try {
                 // Her çalıştırmada, daha önce oluşturduğumuz ve sabitleri içeren scope'u kullanıyoruz.
                 // Ve fonksiyonu yeniden derleyip çalıştırıyoruz.
                 Function jsFunction = executionContext.compileFunction(mainScope, functionWrapper, "rule", 1, null);
-                
+
                 Object result = jsFunction.call(executionContext, mainScope, mainScope, new Object[]{a, b});
                 Set<Integer> resultSet = new HashSet<>();
 
@@ -102,6 +126,8 @@ public class RuleParserService {
                     );
                 }
                 return resultSet;
+            } catch (InvalidRuleException e) {
+                throw e;
             } catch (Exception e) {
                 throw new InvalidRuleException("Kural çalıştırılırken hata oluştu: " + e.getMessage());
             } finally {
