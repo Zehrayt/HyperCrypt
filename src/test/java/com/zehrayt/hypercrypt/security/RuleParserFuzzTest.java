@@ -18,10 +18,11 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * GÜVENLİK FUZZ TEST HARNESS: RuleParserService'in Rhino sandbox'ını doğrular.
  *
- * Savunma katmanları: 
- * 1. isSafeRule(): Kara liste tabanlı (java, eval vb.) filtreleme.
+ * Savunma katmanları:
+ * 1. isObviouslyMalicious(): Kara liste tabanlı (java, eval vb.) filtreleme.
  *  2. initSafeStandardObjects(): Java paketlerine erişimi engelleyen ana katman.
  *  3. Instruction-count: CPU ve sonsuz döngü (DoS) koruması.
+ *  4. hardenScopeAgainstMemoryAmplification(): Bellek-amplifikasyonu (repeat/join/fill vb.) koruması.
  *
  * Hedef: payload'lar her zaman InvalidRuleException ile reddedilsin; JVM çökmesin,
  * Java tarafına sızıntı olmasın.
@@ -41,7 +42,7 @@ class RuleParserFuzzTest {
     @Test
     void test_blacklistBypass_stringConcatenation_isNotCaughtBySourceFilter() {
         // "java" kelimesi iki ayrı string literaline bölündüğü için kaynak
-        // metinde bitişik geçmiyor; isSafeRule() bunu yakalayamıyor. Burada
+        // metinde bitişik geçmiyor; isObviouslyMalicious() bunu yakalayamıyor. Burada
         // JS motoru sadece string birleştirip uzunluk alıyor, gerçek bir erişim yok.
         String payload = "(\"ja\" + \"va\").length + a + b";
 
@@ -51,19 +52,11 @@ class RuleParserFuzzTest {
     }
 
     @Test
-    void test_functionConstructorEscape_doesNotReachJavaBridge() {
-        // "constructor" kara listede yok; klasik Rhino sandbox escape denemesi:
-        // global nesneye (this) ulaşıp Java köprüsüne sıçramaya çalışır.
+    void test_functionConstructorEscape_isRejectedByBlacklist() {
+        // "constructor" artık kara listede; klasik Rhino escape denemesi ön-kontrolde reddedilir.
         String payload = "this.constructor.constructor(\"return this\")() + a + b";
 
-        BiFunction<Integer, Integer, Set<Integer>> operation = ruleParserService.parseRule(payload, null);
-
-        // initSafeStandardObjects() "java"/"Packages" erişimini kapattığı için
-        // bu deneme normal bir JS nesnesine ulaşır, Number/NativeArray dönmez
-        // ve reddedilir. Java tarafına sızıntı OLMAMALI.
-        assertThrows(InvalidRuleException.class, () -> operation.apply(1, 2),
-            "Function-constructor escape denemesi sayısal/sonuç tipi üretmemeli; " +
-            "aksi halde sandbox'ın bir noktada gerçekten kırıldığı anlamına gelir.");
+        assertThrows(InvalidRuleException.class, () -> ruleParserService.parseRule(payload, null));
     }
 
     // 2) DoS / SONSUZ DÖNGÜ TESTİ
@@ -88,23 +81,18 @@ class RuleParserFuzzTest {
             "Hata mesajı, sonsuz döngünün zaman/instruction limiti tarafından yakalandığını belirtmeli.");
     }
 
-    // 3) BELLEK TÜKETİMİ (MEMORY-BOMB) — BİLİNEN AÇIK BULGU
-    // String.repeat() gibi tek bir çağrı, instruction sayacını artırmadan
-    // büyük bellek ayırabilir. Burada güvenli ölçekte (birkaç MB) gösterip
-    // bu boşluğu belgeliyoruz; production'da OOM riski taşır.
+    // 3) BELLEK TÜKETİMİ (MEMORY-BOMB) — KAPATILAN AÇIK
+    // String.repeat() vb. metotlar scope'tan kaldırıldı (hardenScopeAgainstMemoryAmplification).
+    // Bu test artık payload'ın reddedildiğini doğruluyor.
 
     @Test
-    void test_largeStringAllocation_succeedsWithoutSizeGuard_knownGap() {
-        // 2.000.000 karakter (~4MB), test için güvenli boyutta.
+    void test_largeStringAllocation_isRejected_afterMemoryAmplificationGuard() {
         String payload = "\"x\".repeat(2000000).length + a + b";
 
-        assertDoesNotThrow(() -> {
-            BiFunction<Integer, Integer, Set<Integer>> operation = ruleParserService.parseRule(payload, null);
-            Set<Integer> result = operation.apply(1, 2);
-            assertEquals(Set.of(2000003), result);
-        }, "String.repeat() ile büyük bellek tahsisi tek bir JS çağrısında gerçekleşir; " +
-           "instruction-count limiti veya başka bir boyut sınırı bunu engellemiyor. " +
-           "ÖNERİ: rule sonucu için maksimum string/array uzunluğu sınırı eklenmeli.");
+        BiFunction<Integer, Integer, Set<Integer>> operation = ruleParserService.parseRule(payload, null);
+
+        assertThrows(InvalidRuleException.class, () -> operation.apply(1, 2),
+            "String.repeat() scope'tan kaldırıldığı için bu payload artık InvalidRuleException ile reddedilmeli.");
     }
 
     // 4) MUTASYON TABANLI FUZZING

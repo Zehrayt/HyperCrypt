@@ -5,10 +5,15 @@ import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.zehrayt.hypercrypt.dtos.VerificationResult;
 
 
 public class AxiomVerifier {
+
+    private static final Logger log = LoggerFactory.getLogger(AxiomVerifier.class);
 
     // Hiper-işlemi temsil eden fonksiyonel arayüz
     // İki eleman alır (Integer, Integer), bir küme döndürür (Set<Integer>)
@@ -40,20 +45,20 @@ public class AxiomVerifier {
      * Hiper-işlemin sonucu boş olamaz ve baseSet dışına çıkamaz.
      */
     public boolean checkClosure() {
-        System.out.println("Checking for closure...");
+        log.debug("Checking for closure...");
         for (Integer a : baseSet) {
             for (Integer b : baseSet) {
                 Set<Integer> result = hyperMultiplication.apply(a, b);
 
                 // Kural 1: Sonuç boş küme olamaz
                 if (result == null || result.isEmpty()) {
-                    System.out.println("Closure failed: Result is empty for (a,b) = (" + a + "," + b + ")");
+                    log.debug("Closure failed: Result is empty for (a,b) = ({},{})", a, b);
                     return false;
                 }
 
                 // Kural 2: Sonuç, baseSet'in bir alt kümesi olmalıdır
                 if (!baseSet.containsAll(result)) {
-                    System.out.println("Closure failed: Result contains elements outside baseSet for (a,b) = (" + a + "," + b + ")");
+                    log.debug("Closure failed: Result contains elements outside baseSet for (a,b) = ({},{})", a, b);
                     return false;
                 }
             }
@@ -67,7 +72,7 @@ public class AxiomVerifier {
      * @return Birleşme özelliği sağlanıyorsa true, aksi halde false.
      */
     public boolean isAssociative() {
-        System.out.println("Checking for associativity...");
+        log.debug("Checking for associativity...");
         // Kümedeki tüm olası (a, b, c) üçlülerini denememiz gerekiyor.
         for (Integer a : baseSet) {
             for (Integer b : baseSet) {
@@ -88,9 +93,8 @@ public class AxiomVerifier {
 
                     // İki sonuç kümesi eşit değilse, özellik sağlanmıyor demektir.
                     if (!leftSideResult.equals(rightSideResult)) {
-                        System.out.println("Associativity failed for (a,b,c) = (" + a + "," + b + "," + c + ")");
-                        System.out.println("LHS: " + leftSideResult);
-                        System.out.println("RHS: " + rightSideResult);
+                        log.debug("Associativity failed for (a,b,c) = ({},{},{}) — LHS: {}, RHS: {}",
+                            a, b, c, leftSideResult, rightSideResult);
                         return false;
                     }
                 }
@@ -105,7 +109,7 @@ public class AxiomVerifier {
      * @return Üretim aksiyomu sağlanıyorsa true, aksi halde false.
      */
     public boolean checkReproductionAxiom() {
-        System.out.println("Checking for reproduction axiom...");
+        log.debug("Checking for reproduction axiom...");
         for (Integer a : baseSet) {
             // a ο H kontrolü
             Set<Integer> leftResult = new HashSet<>();
@@ -113,7 +117,7 @@ public class AxiomVerifier {
                 leftResult.addAll(hyperMultiplication.apply(a, h));
             }
             if (!leftResult.equals(baseSet)) {
-                System.out.println("Reproduction failed for a ο H where a = " + a);
+                log.debug("Reproduction failed for a ο H where a = {}", a);
                 return false;
             }
 
@@ -123,7 +127,7 @@ public class AxiomVerifier {
                 rightResult.addAll(hyperMultiplication.apply(h, a));
             }
             if (!rightResult.equals(baseSet)) {
-                 System.out.println("Reproduction failed for H ο a where a = " + a);
+                 log.debug("Reproduction failed for H ο a where a = {}", a);
                 return false;
             }
         }
@@ -135,7 +139,7 @@ public class AxiomVerifier {
      * Dağılma özelliğini kontrol eder: a * (b + c) ⊆ a*b + a*c
      */
     public boolean checkDistributivity() {
-        System.out.println("Checking for distributivity...");
+        log.debug("Checking for distributivity...");
         for (Integer a : baseSet) {
             for (Integer b : baseSet) {
                 for (Integer c : baseSet) {
@@ -156,7 +160,7 @@ public class AxiomVerifier {
 
                     // Kontrol: Sol taraf, sağ tarafın bir alt kümesi mi?
                     if (!rightSideResult.containsAll(leftSideResult)) {
-                        System.out.println("Distributivity failed for (a,b,c) = (" + a + "," + b + "," + c + ")");
+                        log.debug("Distributivity failed for (a,b,c) = ({},{},{})", a, b, c);
                         return false;
                     }
 
@@ -173,7 +177,7 @@ public class AxiomVerifier {
                     }
 
                     if (!rightSideResultR.containsAll(leftSideResultR)) {
-                        System.out.println("Right distributivity failed for (a,b,c) = (" + a + "," + b + "," + c + ")");
+                        log.debug("Right distributivity failed for (a,b,c) = ({},{},{})", a, b, c);
                         return false;
                     }
                 }
@@ -187,7 +191,7 @@ public class AxiomVerifier {
      * Negatif özelliğini kontrol eder: a.(-b) = (-a).b = -(a.b)
      */
     public boolean checkNegativeProperty() {
-        System.out.println("Checking for negative property...");
+        log.debug("Checking for negative property...");
         for (Integer a : baseSet) {
             for (Integer b : baseSet) {
                 Integer negB = standardNegation.apply(b);
@@ -203,7 +207,7 @@ public class AxiomVerifier {
                 }
 
                 if (!res1.equals(res2) || !res1.equals(res3)) {
-                    System.out.println("Negative property failed for (a,b) = (" + a + "," + b + ")");
+                    log.debug("Negative property failed for (a,b) = ({},{})", a, b);
                     return false;
                 }
             }

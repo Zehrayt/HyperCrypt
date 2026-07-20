@@ -8,13 +8,17 @@ import edu.jas.poly.GenPolynomial;
 import edu.jas.poly.GenPolynomialRing;
 import edu.jas.structure.RingElem;
 import edu.jas.structure.RingFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 @Service
 public class SymbolicVerifierService {
 
+    private static final Logger log = LoggerFactory.getLogger(SymbolicVerifierService.class);
+
     public VerificationResult verifySymbolically(String rule, String domain) {
-        System.out.println("Performing symbolic verification for rule '" + rule + "' on domain '" + domain + "'...");
+        log.debug("Performing symbolic verification for rule '{}' on domain '{}'...", rule, domain);
 
         VerificationResult result = new VerificationResult();
 
@@ -63,7 +67,7 @@ public class SymbolicVerifierService {
             }
 
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Symbolic verification failed for rule '{}'", rule, e);
             result.setSuggestion("Symbolic analysis failed: " + e.getMessage());
             result.setSemihypergroup(false);
         }
@@ -94,8 +98,8 @@ public class SymbolicVerifierService {
             GenPolynomial<C> b_op_c = compose(rulePoly, mainRing, polyB, polyC);
             GenPolynomial<C> rhs = compose(rulePoly, mainRing, polyA, b_op_c);
 
-            System.out.println("LHS Parsed: " + lhs);
-            System.out.println("RHS Parsed: " + rhs);
+            log.debug("LHS Parsed: {}", lhs);
+            log.debug("RHS Parsed: {}", rhs);
 
             if (lhs.equals(rhs)) {
                 result.setSemihypergroup(true);
@@ -110,7 +114,7 @@ public class SymbolicVerifierService {
             result.setHypergroup(false);
 
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Associativity analysis failed for rule '{}'", rule, e);
             result.setSuggestion("Associativity analysis failed: " + e.getMessage());
             result.setSemihypergroup(false);
         }
@@ -127,7 +131,7 @@ public class SymbolicVerifierService {
      * ExpVector.totalDeg() bazlı totalDegree() kullanıldı.
      */
     private <C extends RingElem<C>> void verifyGenerationAxiom(String rule, String domain, VerificationResult result) {
-        System.out.println("Symbolically checking generation axiom using JAS for rule: " + rule);
+        log.debug("Symbolically checking generation axiom using JAS for rule: {}", rule);
 
         boolean isSolvable = false;
         try {
@@ -163,7 +167,7 @@ public class SymbolicVerifierService {
             }
 
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("Generation axiom analysis failed for rule '{}'", rule, e);
             result.setQuasihypergroup(false);
             if (result.getFailingAxiom() == null) {
                 result.setFailingAxiom("Üretim Aksiyomu (Reproduction) - Analiz sırasında hata oluştu");

@@ -6,6 +6,8 @@ import org.mozilla.javascript.ContextFactory;
 import org.mozilla.javascript.Function;
 import org.mozilla.javascript.NativeArray;
 import org.mozilla.javascript.Scriptable;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.util.HashSet;
@@ -15,6 +17,8 @@ import java.util.function.BiFunction;
 
 @Service
 public class RuleParserService {
+
+    private static final Logger log = LoggerFactory.getLogger(RuleParserService.class);
 
     // DoS koruması: Standart Context.enter() ile çalışan bir Rhino scripti
     // süresiz bir döngüye girerse (örn. "(()=>{while(true){}})()" kara listedeki
@@ -34,26 +38,57 @@ public class RuleParserService {
     private Context enterSafeContext() {
         Context cx = SAFE_CONTEXT_FACTORY.enterContext();
         cx.setInstructionObserverThreshold(MAX_INSTRUCTIONS);
-        // Dil sürümü açıkça ES6 olarak ayarlanmazsa Rhino'nun parser'ı ok
-        // fonksiyonu (=>), let/const gibi modern söz dizimini reddedebiliyor
-        // ("missing ; before statement" hatası). RuleParserFuzzTest'teki
-        // arrow-function senaryosunun (bilinçli olarak) parse edilebilmesi
-        // ve instruction-count limitiyle durdurulması için ES6 gerekli.
+        // Rhino'nun modern JS söz dizimini (=>, let/const) desteklemesi için ES6 aktiftir.
+        // Bu ayar, fuzz testlerindeki modern payload'ların parser hatasına düşmek yerine, 
+        // asıl güvenlik katmanı olan instruction-count limitinde test edilmesini sağlar.
         cx.setLanguageVersion(Context.VERSION_ES6);
         return cx;
     }
 
-    // GÜVENLİK ADIMI 1: Tehlikeli kelimeleri (Kara Liste) filtreleyen metod (Hakem 3 uyarısı)
-    private boolean isSafeRule(String rule) {
+    // Kural metni için makul bir üst sınır; hiper-işlem kuralları kısa
+    // matematiksel ifadelerdir, bu boyutu aşan hiçbir meşru kural olmamalı.
+    private static final int MAX_RULE_LENGTH = 500;
+
+    /**
+     * Kara liste tabanlı hızlı ön-kontrol (Fast-Fail).
+     * UYARI: Bu bir güvenlik sınırı DEĞİLDİR (string birleştirme vb. ile kolayca atlatılabilir).
+     * Asıl güvenlik 'initSafeStandardObjects()' ve instruction limitleridir. 
+     * Amaç: Bariz saldırıları JS motorunu hiç yormadan hızlıca reddetmek.
+     */
+    private boolean isObviouslyMalicious(String rule) {
         String lowerRule = rule.toLowerCase();
-        // Java reflection, eval ve işletim sistemi komutlarını engelle
-        String[] forbiddenKeywords = {"java", "system", "eval", "function", "process", "require", "import", "exec", "class"};
-        for (String keyword : forbiddenKeywords) {
+        String[] suspiciousKeywords = {
+            "java", "system", "eval", "function", "process", "require", "import", "exec", "class",
+            "constructor", "prototype", "__proto__"
+        };
+        for (String keyword : suspiciousKeywords) {
             if (lowerRule.contains(keyword)) {
-                return false;
+                return true;
             }
         }
-        return true;
+        return false;
+    }
+
+    // BELLEK BOMBASI (Memory-Bomb) KORUMASI
+    // Rhino'nun instruction limiti, "x".repeat() gibi devasa bellek tüketen native 
+    // metodları tek adım sayar. Kurallar sadece sayısal işlemlere ihtiyaç duyduğundan, 
+    // bu riskli string/array metodları scope'tan kaldırılarak zafiyet kapatılmıştır.
+    private void hardenScopeAgainstMemoryAmplification(Scriptable scope) {
+        removePrototypeMember(scope, "String", "repeat");
+        removePrototypeMember(scope, "String", "padStart");
+        removePrototypeMember(scope, "String", "padEnd");
+        removePrototypeMember(scope, "Array", "join");
+        removePrototypeMember(scope, "Array", "fill");
+    }
+
+    private void removePrototypeMember(Scriptable scope, String constructorName, String memberName) {
+        Object constructor = scope.get(constructorName, scope);
+        if (constructor instanceof Scriptable) {
+            Object prototype = ((Scriptable) constructor).get("prototype", (Scriptable) constructor);
+            if (prototype instanceof Scriptable) {
+                ((Scriptable) prototype).delete(memberName);
+            }
+        }
     }
 
     public BiFunction<Integer, Integer, Set<Integer>> parseRule(String ruleString, Map<String, Object> constants) {
@@ -61,8 +96,16 @@ public class RuleParserService {
             throw new InvalidRuleException("Kural metni boş olamaz.");
         }
 
-        // Kuralı çalıştırmadan önce güvenlik filtresinden geçir
-        if (!isSafeRule(ruleString)) {
+        if (ruleString.length() > MAX_RULE_LENGTH) {
+            throw new InvalidRuleException(
+                "Kural metni çok uzun (maksimum " + MAX_RULE_LENGTH + " karakter).");
+        }
+
+        // Hızlı ön-kontrol: bariz saldırı denemelerini JS motorunu hiç
+        // çalıştırmadan reddet. Asıl güvenlik initSafeStandardObjects() ve
+        // instruction-count limitiyle sağlanıyor (bkz. isObviouslyMalicious).
+        if (isObviouslyMalicious(ruleString)) {
+            log.warn("Reddedilen kural (kara liste ön-kontrolü): {}", ruleString);
             throw new InvalidRuleException("Güvenlik ihlali: Kural metninde izin verilmeyen zararlı komutlar tespit edildi.");
         }
 
@@ -79,6 +122,9 @@ public class RuleParserService {
             // GÜVENLİK ADIMI 2: initStandardObjects YERİNE "initSafeStandardObjects" KULLANIMI
             // Bu metot, Rhino motorunun Java sınıflarına (Packages, java.lang vb.) erişimini tamamen kapatır.
             mainScope = rhinoContext.initSafeStandardObjects();
+
+            // GÜVENLİK ADIMI 3: Bellek tüketimi (memory-bomb) koruması.
+            hardenScopeAgainstMemoryAmplification(mainScope);
 
              // Kuralda kullanılabilecek sabitleri scope'a ekleyelim.
              // Örneğin, 'n' veya 'p' gibi sabitler kuralda kullanılabilir.

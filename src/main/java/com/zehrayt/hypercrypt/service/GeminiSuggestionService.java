@@ -6,6 +6,8 @@ import org.springframework.http.MediaType;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -13,6 +15,8 @@ import com.fasterxml.jackson.databind.node.ArrayNode;
 
 @Service
 public class GeminiSuggestionService {
+
+    private static final Logger log = LoggerFactory.getLogger(GeminiSuggestionService.class);
 
     private final String apiKey = System.getenv("GEMINI_API_KEY");
     
@@ -60,7 +64,7 @@ public class GeminiSuggestionService {
         try {
             requestBody = objectMapper.writeValueAsString(requestBodyNode);
         } catch (Exception e) {
-            System.err.println("Error while serializing Gemini request body: " + e.getMessage());
+            log.error("Error while serializing Gemini request body", e);
             return "AI suggestion could not be retrieved at this time.";
         }
 
@@ -77,7 +81,7 @@ public class GeminiSuggestionService {
             }
             return "AI suggestion could not be parsed.";
         } catch (Exception e) {
-            System.err.println("Error while calling Gemini API: " + e.getMessage());
+            log.error("Error while calling Gemini API", e);
             return "AI suggestion could not be retrieved at this time.";
         }
     }

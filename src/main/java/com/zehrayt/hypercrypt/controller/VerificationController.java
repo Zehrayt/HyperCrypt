@@ -7,6 +7,8 @@ import com.zehrayt.hypercrypt.service.RuleParserService;
 import com.zehrayt.hypercrypt.verification.AxiomVerifier;
 import com.zehrayt.hypercrypt.verification.SymbolicVerifierService;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -22,6 +24,8 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api")
 public class VerificationController {
+
+    private static final Logger log = LoggerFactory.getLogger(VerificationController.class);
 
     private final GeminiSuggestionService suggestionService;
     private final RuleParserService ruleParserService;    
@@ -141,7 +145,7 @@ public class VerificationController {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         } catch (Exception e) {
             // Beklenmedik diğer tüm hatalar için 500 Internal Server Error döndür
-            e.printStackTrace(); // Hatanın detayını konsola yazdır
+            log.error("verify sırasında beklenmedik hata", e);
             return ResponseEntity.status(500).body(Map.of("error", "Sunucuda beklenmedik bir hata oluştu."));
         }
     }

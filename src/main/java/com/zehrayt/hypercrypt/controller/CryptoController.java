@@ -1,18 +1,24 @@
 package com.zehrayt.hypercrypt.controller;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import com.zehrayt.hypercrypt.dtos.KeyExchangeRequest;
 import com.zehrayt.hypercrypt.dtos.KeyExchangeResult;
+import com.zehrayt.hypercrypt.exception.InvalidRuleException;
 import com.zehrayt.hypercrypt.service.CryptoService;
 
 
 @RestController
 @RequestMapping("/api/crypto")
 public class CryptoController {
+
+    private static final Logger log = LoggerFactory.getLogger(CryptoController.class);
 
     // kaba kuvvet aramasını hem deneme sayısı hem de süre olarak sınırlıyoruz (DoS koruması).
     private static final int MAX_BRUTEFORCE_ATTEMPTS = 100_000;
@@ -26,7 +32,7 @@ public class CryptoController {
     }
 
     @PostMapping("/calculate-key") // Hem Public Key hem de Shared Secret'ı hesaplayacak
-    public KeyExchangeResult calculateKey(@RequestBody KeyExchangeRequest request) {
+    public ResponseEntity<KeyExchangeResult> calculateKey(@RequestBody KeyExchangeRequest request) {
         try {
             // Hangi işlemi yapacağımıza karar veriyoruz.
             // Eğer karşıdan gelen anahtar null ise, genel anahtarı hesaplıyoruz.
@@ -50,10 +56,16 @@ public class CryptoController {
                     request.rule, base, request.privateKey, request.modulus);
             }
 
-            return new KeyExchangeResult(result, explanation);
+            return ResponseEntity.ok(new KeyExchangeResult(result, explanation));
 
+        } catch (InvalidRuleException | IllegalStateException e) {
+            // Kontrollü hatalar (geçersiz kural, boş sonuç kümesi vb.) için 400 Bad Request.
+            return ResponseEntity.badRequest().body(new KeyExchangeResult(null, "Hata: " + e.getMessage()));
         } catch (Exception e) {
-            return new KeyExchangeResult(null, "Hata: " + e.getMessage());
+            // Beklenmedik diğer tüm hatalar için 500 Internal Server Error.
+            log.error("calculate-key sırasında beklenmedik hata", e);
+            return ResponseEntity.status(500).body(
+                new KeyExchangeResult(null, "Sunucuda beklenmedik bir hata oluştu."));
         }
     }
 
