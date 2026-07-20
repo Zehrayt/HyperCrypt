@@ -34,6 +34,12 @@ public class RuleParserService {
     private Context enterSafeContext() {
         Context cx = SAFE_CONTEXT_FACTORY.enterContext();
         cx.setInstructionObserverThreshold(MAX_INSTRUCTIONS);
+        // Dil sürümü açıkça ES6 olarak ayarlanmazsa Rhino'nun parser'ı ok
+        // fonksiyonu (=>), let/const gibi modern söz dizimini reddedebiliyor
+        // ("missing ; before statement" hatası). RuleParserFuzzTest'teki
+        // arrow-function senaryosunun (bilinçli olarak) parse edilebilmesi
+        // ve instruction-count limitiyle durdurulması için ES6 gerekli.
+        cx.setLanguageVersion(Context.VERSION_ES6);
         return cx;
     }
 

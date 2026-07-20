@@ -246,31 +246,34 @@ public class AxiomVerifier {
         boolean isHypergroup = isAssociative && isQuasihypergroup;
         result.setHypergroup(isHypergroup);
 
-        // --- NİHAİ KARAR: HİPERHALKA KONTROLÜ ---
-        // (Varsayım: (R,+) değişmeli grup)
+        // --- HİPERHALKA KONTROLÜ ---
+        // Varsayım: (R,+) değişmeli gruptur.
+        // NOT: Rota'nın tanımı 'reproduction' aksiyomunu içermediğinden, 
+        // isMultiplicativeHyperring kontrolü isQuasihypergroup'tan bağımsızdır.
+        // Bir yapı, hipergrup olmasa bile çarpımsal hiperhalka özelliği gösterebilir.
         boolean isMultiplicativeHyperring = isAssociative && isDistributive && hasNegativeProperty;
 
-        // --- EN YÜKSEK YAPIYI VE HATA MESAJINI AYARLA ---
+        // --- EN YÜKSEK YAPIYI BELİRLE (highestStructure) ---
         if (isMultiplicativeHyperring) {
             result.setHighestStructure("Çarpımsal Hiperhalka");
-            result.setFailingAxiom(null);
+        } else if (!isAssociative) {
+            result.setHighestStructure("Hiper yapı (ama Yarı Hipergrup değil)");
+        } else if (!isDistributive) {
+            result.setHighestStructure(isHypergroup ? "Hipergrup (ama Hiperhalka değil)" : "Yarı Hipergrup (ama Hiperhalka değil)");
         } else {
-            // Hatanın ilk bulunduğu yere göre raporla.
-            if (!isAssociative) {
-                result.setFailingAxiom("Birleşme Özelliği (Madde 2)");
-                result.setHighestStructure("Hiper yapı (ama Yarı Hipergrup değil)");
-            } else if (!isDistributive) {
-                result.setFailingAxiom("Dağılma Özelliği (Madde 3)");
-                // Bu noktada en azından bir yarı hipergrup olduğunu biliyoruz.
-                result.setHighestStructure(isHypergroup ? "Hipergrup (ama Hiperhalka değil)" : "Yarı Hipergrup (ama Hiperhalka değil)");
-            } else if (!hasNegativeProperty) {
-                result.setFailingAxiom("Negatif Özelliği (Madde 4)");
-                result.setHighestStructure("Yarı Hipergrup (ama Hiperhalka değil)");
-            } else if (!isQuasihypergroup) {
-                // Not: Bu durum hiperhalka tanımını doğrudan engellemez, ama hipergrup olmasını engeller.
-                // Bu yüzden failingAxiom'u burada ayarlamayabiliriz.
-                result.setHighestStructure(isMultiplicativeHyperring ? "Çarpımsal Hiperhalka" : "Yarı Hipergrup (ama Hiperhalka değil)");
-            }
+            // !hasNegativeProperty
+            result.setHighestStructure(isHypergroup ? "Hipergrup (ama Hiperhalka değil)" : "Yarı Hipergrup (ama Hiperhalka değil)");
+        }
+
+        // --- FAILINGAXIOM: HİPERGRUP SEVİYESİNİ ÖNCELİKLENDİR ---
+        // failingAxiom: Hipergrup aksiyomlarını (Birleşme -> Üretim) öncelik sırasına göre raporlar.
+        // Halka özel (Distributivity/Negative) eksiklikler, 'highestStructure' ile bildirildiği için null geçilir.
+        if (!isAssociative) {
+            result.setFailingAxiom("Birleşme Özelliği (Madde 2)");
+        } else if (!isQuasihypergroup) {
+            result.setFailingAxiom("Üretim Aksiyomu (Reproduction)");
+        } else {
+            result.setFailingAxiom(null);
         }
 
         return result;

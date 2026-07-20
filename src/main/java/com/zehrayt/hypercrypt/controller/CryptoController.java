@@ -33,20 +33,22 @@ public class CryptoController {
             // Değilse, ortak sırrı hesaplıyoruz.
 
             int base = request.generator;
-            String explanation = "Genel anahtarınız hesaplandı.";
+            Integer result;
+            String explanation;
 
-            // Eğer karşıdan gelen genel anahtar varsa (Ortak Sır hesaplanacak)
+            // Eğer karşıdan gelen genel anahtar varsa, ortak sır hesaplanır
+            // (SHA-256 ile türetilir); değilse genel anahtar üretilir (ham
+            // değer, hash'lenmez — bkz. CryptoService.calculatePublicValue).
             if (request.theirPublicKey != null) {
                 base = request.theirPublicKey; // İşlemin tabanı karşıdan gelen anahtar olur.
                 explanation = "Ortak gizli anahtarınız hesaplandı.";
+                result = cryptoService.calculateSharedSecret(
+                    request.rule, base, request.privateKey, request.modulus);
+            } else {
+                explanation = "Genel anahtarınız hesaplandı.";
+                result = cryptoService.calculatePublicValue(
+                    request.rule, base, request.privateKey, request.modulus);
             }
-
-            Integer result = cryptoService.calculate(
-                request.rule,
-                base,
-                request.privateKey,
-                request.modulus
-            );
 
             return new KeyExchangeResult(result, explanation);
 
@@ -90,11 +92,11 @@ public class CryptoController {
             }
 
             try {
-                Integer candidatePublicKey = cryptoService.calculate(
+                Integer candidatePublicKey = cryptoService.calculatePublicValue(
                     request.rule, request.generator, candidatePrivateKey, request.modulus);
 
                 if (candidatePublicKey != null && candidatePublicKey.equals(request.publicKeyA)) {
-                    Integer recoveredSecret = cryptoService.calculate(
+                    Integer recoveredSecret = cryptoService.calculateSharedSecret(
                         request.rule, request.publicKeyB, candidatePrivateKey, request.modulus);
                     long elapsedMillis = System.currentTimeMillis() - startTime;
 

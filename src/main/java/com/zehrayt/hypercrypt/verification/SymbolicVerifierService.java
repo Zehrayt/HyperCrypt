@@ -117,17 +117,14 @@ public class SymbolicVerifierService {
     }
 
     /**
-     * Üretim Aksiyomu Testi (Reproduction Axiom).
-     * String eşleştirme (göstermelik) yerine JAS kullanılarak 
-     * gerçek "Polinom Derecesi (Polynomial Degree)" analizi ile matematiksel ispat yapıldı.
-     * Bir hiper-işlemin sonsuz kümelerde (Z veya Q) üretim aksiyomunu (a . H = H) sağlaması için, 
-     * a . x = y denkleminin her zaman çözülebilir olması gerekir.
-     * Bunun tek bir yolu vardır: Kuralın (polinomun) toplam derecesi kesinlikle 1 olmalıdır.
-     * formül c_1a + c_2b + c_3 şeklinde (lineer) olmak zorundadır.
-     * Eğer kuralda a . b varsa (toplam derece 1+1=2 olur) veya a^2 varsa (derece 2), bu denklem her zaman çözülemez.
-     * Sıfıra bölme veya kök alma hatası verir ve bu da üretim aksiyomunun sağlanmamasına neden olur.
-     * Ayrıca formülde hem a hem de b harfi mutlaka bulunmalıdır.
-     * JAS'ın degree() fonksiyonunu kullanarak polinomun derecesine göre matematiksel ispat yapacağız.
+     * Üretim Aksiyomu Testi (Reproduction Axiom)
+     * JAS kütüphanesi ile Polinom Derecesi (Total Degree) analizi.
+     * 
+     * Teori: a . H = H aksiyomunun sonsuz kümelerde (Z, Q) sağlanması için 
+     * polinomun toplam derecesi (Total Degree) 1 olmalıdır. (a.b gibi 2. derece 
+     * terimler, a.x=y denkleminin çözülebilirliğini bozar).
+     * 
+     * ExpVector.totalDeg() bazlı totalDegree() kullanıldı.
      */
     private <C extends RingElem<C>> void verifyGenerationAxiom(String rule, String domain, VerificationResult result) {
         System.out.println("Symbolically checking generation axiom using JAS for rule: " + rule);
@@ -141,7 +138,7 @@ public class SymbolicVerifierService {
             GenPolynomial<C> rulePoly = ruleRing.parse(rule.replace("a", "x").replace("b", "y"));
 
             // MATEMATİKSEL İSPAT ALGORİTMASI:
-            long totalDegree = rulePoly.degree(); // Polinomun toplam derecesi
+            long totalDegree = rulePoly.totalDegree(); // Polinomun toplam derecesi (üslerin toplamı)
             long degreeX = rulePoly.degree(0);    // 'a' değişkeninin (x) derecesi
             long degreeY = rulePoly.degree(1);    // 'b' değişkeninin (y) derecesi
 

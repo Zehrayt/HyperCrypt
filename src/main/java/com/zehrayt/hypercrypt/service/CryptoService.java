@@ -13,6 +13,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+/**
+ * Hiper-Diffie-Hellman anahtar değişimini yürüten hesaplama servisi.
+ */
 @Service
 public class CryptoService {
     private final RuleParserService ruleParserService;
@@ -23,38 +26,67 @@ public class CryptoService {
     }
 
     /**
-     * Kriptografik işlemi (a op b) hiperhalka kuralıyla hesaplar.
+     * Genel anahtar (public key) üretimi için kullanılır — protokolün ilk adımı.
+     *
+     * @warning Güvensiz ağ üzerinden iletilen değerlerde SHA-256 tabanlı türetim UYGULANMAZ.
+     * Hashleme, (g ∘ a) ∘ b = (g ∘ b) ∘ a cebirsel bağıntısını bozarak ortak sır 
+     * (shared secret) uyumunu engeller.
+     * @note Hiper-işlem küme döndürdüğünde, deterministik sonuç için rastgele 
+     * iterasyon yerine her zaman "sıralı en küçük eleman" seçilir (bkz: CryptoServiceTest).
+     *
      * @param rule Kural metni
-     * @param base İşlemin sol tarafındaki değer (g veya karşıdan gelen anahtar)
+     * @param base İşlemin sol tarafındaki değer (üreteç g veya karşıdan gelen anahtar)
      * @param exponent İşlemin sağ tarafındaki değer (gizli anahtar)
      * @param modulus Mod değeri (n)
-     * @return Kriptografik amaçla kullanılan tek bir tamsayı sonucu.
+     * @return Ağa gönderilecek genel anahtar değeri.
      */
-    public Integer calculate(String rule, int base, int exponent, int modulus) {
-        // RuleParser'a gönderilecek sabitler.
-        Map<String, Object> constants = Map.of("n", modulus);
+    public Integer calculatePublicValue(String rule, int base, int exponent, int modulus) {
+        Set<Integer> resultSet = evaluate(rule, base, exponent, modulus);
+        return Collections.min(resultSet);
+    }
 
-        
-        // RuleParserService zaten 'a' ve 'b'yi
-        // gerçek fonksiyon parametresi olarak bağlıyor; bu yüzden kuralı hiç string olarak
-        // değiştirmeden, doğrudan base/exponent değerleriyle çalıştırıyoruz.
+    /**
+     * Ortak sır (shared secret) üretimi için kullanılır — protokolün son adımı.
+     *
+     * Bu değer ağa hiç gönderilmez, yalnızca yerel olarak hesaplanır. Eve için
+     * tahmin edilemezliği artırmak amacıyla SHA-256 tabanlı türetim (bkz.
+     * deriveSharedValue) yalnızca burada, nihai ortak sır üzerinde uygulanır.
+     *
+     * @param rule Kural metni
+     * @param base İşlemin sol tarafındaki değer (karşıdan gelen genel anahtar)
+     * @param exponent İşlemin sağ tarafındaki değer (gizli anahtar)
+     * @param modulus Mod değeri (n)
+     * @return Kriptografik amaçla kullanılan, tahmin edilmesi zorlaştırılmış tek bir tamsayı sonucu.
+     */
+    public Integer calculateSharedSecret(String rule, int base, int exponent, int modulus) {
+        Set<Integer> resultSet = evaluate(rule, base, exponent, modulus);
+        return deriveSharedValue(resultSet, modulus);
+    }
+
+    /**
+     * Kuralı (a op b) verilen taban/üs/modül parametreleriyle çalıştırıp ham
+     * (hash'lenmemiş) sonuç kümesini döndürür.
+     *
+     * RuleParserService zaten 'a' ve 'b'yi gerçek fonksiyon parametresi olarak
+     * bağlıyor; bu yüzden kuralı hiç string olarak değiştirmeden, doğrudan
+     * base/exponent değerleriyle çalıştırıyoruz.
+     */
+    private Set<Integer> evaluate(String rule, int base, int exponent, int modulus) {
+        Map<String, Object> constants = Map.of("n", modulus);
         Set<Integer> resultSet = ruleParserService.parseRule(rule, constants).apply(base, exponent);
 
         if (resultSet.isEmpty()) {
             throw new IllegalStateException("Kriptografik işlem boş bir sonuç kümesi üretti.");
         }
 
-        return deriveSharedValue(resultSet, modulus);
+        return resultSet;
     }
 
     /**
      * Hiper-işlemin sonuç kümesinden tek bir paylaşılan değer türetir.
      *
-     * DÜZELTME: Önceki yaklaşım Collections.max(resultSet) ile en büyük elemanı
-     * seçiyordu. Bu seçim deterministik ama kriptografik olarak öngörülebilir ve
-     * yanlıydı (küçük kümelerde sonuç kolayca tahmin edilebilir). Bunun yerine,
      * kümenin tüm elemanlarını SHA-256 ile karıştırıp modulus'a indirgeyerek
-     * daha az öngörülebilir, hâlâ deterministik bir değer üretiyoruz.
+     * daha az öngörülebilir, deterministik bir değer üretiyoruz.
      */
     private int deriveSharedValue(Set<Integer> resultSet, int modulus) {
         try {
