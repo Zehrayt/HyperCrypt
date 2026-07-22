@@ -2,7 +2,6 @@ package com.zehrayt.hypercrypt.controller;
 
 import com.zehrayt.hypercrypt.dtos.VerificationResult;
 import com.zehrayt.hypercrypt.exception.InvalidRuleException;
-import com.zehrayt.hypercrypt.service.GeminiSuggestionService;
 import com.zehrayt.hypercrypt.service.RuleParserService;
 import com.zehrayt.hypercrypt.service.RuleSuggestionEngine;
 import com.zehrayt.hypercrypt.verification.AxiomVerifier;
@@ -29,27 +28,27 @@ public class VerificationController {
 
     private static final Logger log = LoggerFactory.getLogger(VerificationController.class);
 
-    private final GeminiSuggestionService suggestionService;
     private final RuleParserService ruleParserService;
     private final SymbolicVerifierService symbolicVerifierService;
     private final RuleSuggestionEngine ruleSuggestionEngine;
 
+    private static final String NO_SUGGESTION_FOUND_MESSAGE =
+        "Bu kural için otomatik olarak doğrulanmış bir düzeltme önerisi bulunamadı.";
+
     @Autowired
-    public VerificationController(GeminiSuggestionService suggestionService,
-                                RuleParserService ruleParserService,
+    public VerificationController(RuleParserService ruleParserService,
                                 SymbolicVerifierService symbolicVerifierService,
                                 RuleSuggestionEngine ruleSuggestionEngine) {
-        this.suggestionService = suggestionService;
         this.ruleParserService = ruleParserService;
         this.symbolicVerifierService = symbolicVerifierService;
         this.ruleSuggestionEngine = ruleSuggestionEngine;
     }
 
     // Doğrulanmış (AxiomVerifier'dan geçmiş) önerileri tek bir açıklama metnine indirger;
-    // hiçbiri bulunamazsa null döner ki çağıran taraf Gemini'ye düşebilsin.
+    // hiçbiri bulunamazsa genel bir bilgilendirme metni döner.
     private String formatVerifiedSuggestions(List<RuleSuggestionEngine.Suggestion> verified) {
         if (verified.isEmpty()) {
-            return null;
+            return NO_SUGGESTION_FOUND_MESSAGE;
         }
         return verified.stream().map(s -> s.explanation).collect(Collectors.joining(" "));
     }
@@ -89,19 +88,11 @@ public class VerificationController {
                 // 1. Kuralın içinde standart çarpma (*) içerip içermediğini kontrol et.
                 if (request.rule == null || !request.rule.contains("*")) {
 
-                    // Önce doğrulanmış (AxiomVerifier'dan geçmiş) bir alternatif ara;
-                    // bulunamazsa Gemini'ye düş.
-                    String suggestionText = null;
+                    // Doğrulanmış (AxiomVerifier'dan geçmiş) bir alternatif ara.
+                    String suggestionText = NO_SUGGESTION_FOUND_MESSAGE;
                     if (request.rule != null) {
                         suggestionText = formatVerifiedSuggestions(
                             ruleSuggestionEngine.suggest(request.rule, request.baseSet));
-                    }
-                    if (suggestionText == null) {
-                        suggestionText = suggestionService.getSuggestion(
-                            request.baseSet.toString(),
-                            request.rule,
-                            "Kuralın çarpma içermemesi"
-                        );
                     }
 
                     return ResponseEntity.badRequest().body(Map.of(
@@ -142,17 +133,10 @@ public class VerificationController {
                 // Oluşturulan tabloyu sonuç nesnesine ekle
                 result.setCayleyTable(tableData);
 
-                // 5. Adım: Gerekirse öneri üret — önce doğrulanmış aramayı dene, yoksa Gemini'ye düş.
+                // 5. Adım: Aksiyomlar sağlanmadıysa doğrulanmış bir alternatif ara.
                 if (!result.isHypergroup()) {
-                    String failingAxiom = result.getFailingAxiom() != null ? result.getFailingAxiom() : "belirtilen aksiyomları";
-
                     String suggestionText = formatVerifiedSuggestions(
                         ruleSuggestionEngine.suggest(request.rule, request.baseSet));
-
-                    if (suggestionText == null) {
-                        suggestionText = suggestionService.getSuggestion(
-                                request.baseSet.toString(), request.rule, failingAxiom);
-                    }
 
                     result.setSuggestion(suggestionText);
                 }

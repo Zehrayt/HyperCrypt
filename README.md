@@ -15,7 +15,7 @@ Platformumuz iki ana modülden oluşmaktadır:
 Kullanıcıların kendi hiper-işlem kurallarını yazıp test edebildiği interaktif bir analiz motorudur. 
     Sonlu Kümeler (AxiomVerifier): Kullanıcının girdiği kuralın Kapanıklık, Birleşme, Dağılma, Üretim ve Negatif özelliklerini {Z}_n modüler aritmetiğinde "Brute-force" yöntemiyle test eder ve otomatik Cayley Tabloları oluşturur.
     Sonsuz Kümeler (Sembolik Analiz): Java Algebra System (JAS) kütüphanesi kullanılarak, kuralın polinom derecesi üzerinden gerçek matematiksel ispatlar (örneğin sıfıra bölme imkansızlığı) yapar.
-    Yapay Zeka Desteği: Bir aksiyom sağlanmadığında, entegre Google Gemini AI devreye girerek kuralın nasıl düzeltilebileceğine dair kullanıcıya yapıcı matematiksel öneriler sunar.
+    Doğrulanmış Kural Önerisi: Bir aksiyom sağlanmadığında, sistem katsayı kaydırma, operatör değişimi, terim çıkarma ve eksik değişken ekleme gibi stratejilerle küçük mutasyonlar üretir; her adayı AxiomVerifier ile fiilen doğrular ve yalnızca aksiyomları gerçekten sağladığı kanıtlanmış önerileri kullanıcıya sunar. İsteğe bağlı olarak, Colab'da AxiomVerifier'ın kendisi bir otomatik etiketleme kaynağı olarak kullanılarak eğitilmiş ve ONNX formatına dönüştürülmüş bir sınıflandırma modeli, bu adayların deneme sırasını önceliklendirir; modelin skoru yalnızca sırayı belirler, nihai doğrulama her zaman AxiomVerifier'da kalır.
 
 2. Siber Güvenlik Modülü (Kriptografik Simülasyonlar)
 Hiperhalkaların doğrusal olmayan (non-linear) cebirsel karmaşıklığının güvenlik protokollerine nasıl entegre edilebileceğini gösteren simülasyonlardır.
@@ -27,7 +27,7 @@ Kullanılan Teknolojiler
     Backend: Java, Spring Boot
     Cebirsel Motorlar: JAS (Java Algebra System)
     Kural Ayrıştırıcı (Sandbox): Mozilla Rhino (Zararlı kod enjeksiyonlarına karşı özel kelime filtreli ve kısıtlı environment)
-    Yapay Zeka: Google Gemini API
+    Kural Önerisi / Model Çalıştırma: ONNX Runtime (Colab'da eğitilen önceliklendirme modeli için)
 
 
 🇬🇧
@@ -44,7 +44,7 @@ Our platform consists of two main modules:
 An interactive analysis engine where users can write and test their own hyper-operation rules.
     Finite Sets (AxiomVerifier): Tests the user-defined rule for Closure, Associativity, Distributivity, Reproduction, and Negative properties using a "Brute-force" method in {Z}_n modular arithmetic, and automatically generates Cayley Tables.
     Infinite Sets (Symbolic Analysis): Uses the Java Algebra System (JAS) library to perform actual mathematical proofs (e.g., the impossibility of division by zero) based on the polynomial degree of the rule.
-    AI Support: When an axiom is not satisfied, the integrated Google Gemini AI steps in to provide constructive, mathematical suggestions to the user on how to correct the rule.
+    Verified Rule Suggestions: When an axiom is not satisfied, the system generates small mutations (coefficient shifts, operator swaps, term drops, missing-variable fixes) and actually re-verifies each candidate with AxiomVerifier, surfacing only suggestions proven to satisfy the axioms. An optional classifier — trained in Colab using AxiomVerifier itself as an automatic labeling oracle and exported to ONNX — prioritizes which candidates are tried first; its score only affects ordering, final verification always stays with AxiomVerifier.
     
 2. Cybersecurity Module (Cryptographic Simulations) 
 Simulations demonstrating how the non-linear algebraic complexity of hyperrings can be integrated into security protocols.
@@ -56,4 +56,4 @@ Technologies Used
     Backend: Java, Spring Boot
     Algebraic Engines: JAS (Java Algebra System)
     Rule Parser (Sandbox): Mozilla Rhino (A restricted environment with custom keyword filters against malicious code injection)
-    Artificial Intelligence: Google Gemini API
+    Rule Suggestion / Model Runtime: ONNX Runtime (for the Colab-trained prioritization model)
