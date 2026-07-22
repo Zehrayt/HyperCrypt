@@ -4,6 +4,7 @@ import com.zehrayt.hypercrypt.dtos.VerificationResult;
 import com.zehrayt.hypercrypt.exception.InvalidRuleException;
 import com.zehrayt.hypercrypt.service.GeminiSuggestionService;
 import com.zehrayt.hypercrypt.service.RuleParserService;
+import com.zehrayt.hypercrypt.service.RuleSuggestionEngine;
 import com.zehrayt.hypercrypt.verification.AxiomVerifier;
 import com.zehrayt.hypercrypt.verification.SymbolicVerifierService;
 
@@ -14,6 +15,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.BiFunction;
@@ -28,16 +30,28 @@ public class VerificationController {
     private static final Logger log = LoggerFactory.getLogger(VerificationController.class);
 
     private final GeminiSuggestionService suggestionService;
-    private final RuleParserService ruleParserService;    
+    private final RuleParserService ruleParserService;
     private final SymbolicVerifierService symbolicVerifierService;
+    private final RuleSuggestionEngine ruleSuggestionEngine;
 
     @Autowired
-    public VerificationController(GeminiSuggestionService suggestionService, 
-                                RuleParserService ruleParserService, 
-                                SymbolicVerifierService symbolicVerifierService) {
+    public VerificationController(GeminiSuggestionService suggestionService,
+                                RuleParserService ruleParserService,
+                                SymbolicVerifierService symbolicVerifierService,
+                                RuleSuggestionEngine ruleSuggestionEngine) {
         this.suggestionService = suggestionService;
         this.ruleParserService = ruleParserService;
         this.symbolicVerifierService = symbolicVerifierService;
+        this.ruleSuggestionEngine = ruleSuggestionEngine;
+    }
+
+    // Doğrulanmış (AxiomVerifier'dan geçmiş) önerileri tek bir açıklama metnine indirger;
+    // hiçbiri bulunamazsa null döner ki çağıran taraf Gemini'ye düşebilsin.
+    private String formatVerifiedSuggestions(List<RuleSuggestionEngine.Suggestion> verified) {
+        if (verified.isEmpty()) {
+            return null;
+        }
+        return verified.stream().map(s -> s.explanation).collect(Collectors.joining(" "));
     }
 
     // DoS koruması: AxiomVerifier'ın birleşme/dağılma testleri O(n^3)
@@ -74,18 +88,25 @@ public class VerificationController {
 
                 // 1. Kuralın içinde standart çarpma (*) içerip içermediğini kontrol et.
                 if (request.rule == null || !request.rule.contains("*")) {
-                    
-                    // Kural çarpma içermiyorsa, AI'dan bir öneri isteyelim.
-                    String suggestionFromAI = suggestionService.getSuggestion(
-                        request.baseSet.toString(),
-                        request.rule, // Kullanıcının girdiği hatalı kural
-                        "Kuralın çarpma içermemesi" // Hatayı açıklayan bir metin
-                    );
-                    
-                    // Kullanıcıya özel bir hata mesajı ve AI önerisi içeren bir cevap döndür.
+
+                    // Önce doğrulanmış (AxiomVerifier'dan geçmiş) bir alternatif ara;
+                    // bulunamazsa Gemini'ye düş.
+                    String suggestionText = null;
+                    if (request.rule != null) {
+                        suggestionText = formatVerifiedSuggestions(
+                            ruleSuggestionEngine.suggest(request.rule, request.baseSet));
+                    }
+                    if (suggestionText == null) {
+                        suggestionText = suggestionService.getSuggestion(
+                            request.baseSet.toString(),
+                            request.rule,
+                            "Kuralın çarpma içermemesi"
+                        );
+                    }
+
                     return ResponseEntity.badRequest().body(Map.of(
                         "error", "Girilen kural standart çarpma (*) işlemi içermelidir.",
-                        "suggestion", suggestionFromAI
+                        "suggestion", suggestionText
                     ));
                 }
 
@@ -121,15 +142,19 @@ public class VerificationController {
                 // Oluşturulan tabloyu sonuç nesnesine ekle
                 result.setCayleyTable(tableData);
 
-                // 5. Adım: Gerekirse AI'dan öneri al
+                // 5. Adım: Gerekirse öneri üret — önce doğrulanmış aramayı dene, yoksa Gemini'ye düş.
                 if (!result.isHypergroup()) {
                     String failingAxiom = result.getFailingAxiom() != null ? result.getFailingAxiom() : "belirtilen aksiyomları";
-                    
-                    // AI'a orijinal kuralı gönderiyoruz.
-                    String suggestionFromAI = suggestionService.getSuggestion(
-                            request.baseSet.toString(), request.rule, failingAxiom);
-                    
-                    result.setSuggestion(suggestionFromAI);
+
+                    String suggestionText = formatVerifiedSuggestions(
+                        ruleSuggestionEngine.suggest(request.rule, request.baseSet));
+
+                    if (suggestionText == null) {
+                        suggestionText = suggestionService.getSuggestion(
+                                request.baseSet.toString(), request.rule, failingAxiom);
+                    }
+
+                    result.setSuggestion(suggestionText);
                 }
             
                 // 6. Adım: Başarılı sonucu döndür

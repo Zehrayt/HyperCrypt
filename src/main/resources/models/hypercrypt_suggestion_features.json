@@ -1,0 +1,16 @@
+{
+  "feature_order": [
+    "n",
+    "rule_length",
+    "has_multiplication",
+    "has_cross_term_ab",
+    "num_int_literals",
+    "has_variable_a",
+    "has_variable_b",
+    "symmetry_ratio",
+    "mut_coefficient_sweep",
+    "mut_missing_variable_fix",
+    "mut_operator_swap",
+    "mut_term_drop"
+  ]
+}
