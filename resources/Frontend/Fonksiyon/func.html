@@ -1,156 +1,171 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="tr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Fonksiyon</title>
 
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Fonksiyon</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap"
+      rel="stylesheet"
+    />
+    <script src="../js/include.js" defer></script>
+    <link rel="stylesheet" href="func.css" />
+    <link rel="stylesheet" href="../header/header.css" />
+    <link rel="stylesheet" href="../footer/footer.css" />
+    <script src="func.js" defer></script>
+  </head>
 
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link
-    href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,100..900;1,14..32,100..900&display=swap"
-    rel="stylesheet" />
-  <script src="../js/include.js" defer></script>
-  <link rel="stylesheet" href="func.css" />
-  <link rel="stylesheet" href="../header/header.css" />
-  <link rel="stylesheet" href="../footer/footer.css" />
-  <script src="func.js" defer></script>
+  <body>
+    <!--HEADER-->
+    <div id="header"></div>
 
-</head>
+    <!--Fonksiyon Hakkında-->
+    <section class="content-section" id="fonksiyon">
+      <div class="text">
+        <h2>Fonksiyon Kullanımı</h2>
+        <p>
+          Bu fonksiyon, girdiğiniz küme ve kurallar üzerinden hiperhalka testi
+          yapmanızı sağlar. Öncelikle, işlemi sonlu veya sonsuz bir küme
+          üzerinde yapmak istediğinizi seçin.
+        </p>
+        <ul>
+          <li>
+            <strong>Sonlu küme</strong> seçtiğinizde, elemanları virgülle
+            ayırarak yazmanız gerekir. (Örneğin: 1,2,3,4)
+          </li>
+          <li>
+            <strong>Sonsuz küme</strong> seçtiğinizde, küme türünü belirtmeniz
+            yeterlidir.
+          </li>
+        </ul>
+        <p>Ardından, kuralınızı tanımlayın:</p>
+        <ul>
+          <li>
+            Eğer kural bir <strong>küme</strong> şeklindeyse, köşeli parantez
+            içinde yazılmalıdır. Örnek: [2*a*b, a*b]
+          </li>
+          <li>Normal bir kural ise doğrudan yazabilirsiniz. Örnek: a*b-7</li>
+        </ul>
+        <p>
+          Girilen değerler işlendiğinde, fonksiyon sonucu tablo halinde ekranda
+          görüntülenecektir. Ayrıca, oluşturulan yapının hiper yapı türlerinden
+          hangilerine uyduğunu da görebilirsiniz.
+        </p>
 
-<body>
-  <!--HEADER-->
-  <div id="header"></div>
-
-  <!--Fonksiyon Hakkında-->
-  <section class="content-section" id="fonksiyon">
-    <div class="text">
-      <h2>Fonksiyon Kullanımı</h2>
-      <p>
-        Bu fonksiyon, girdiğiniz küme ve kurallar üzerinden hiperhalka testi yapmanızı sağlar.
-        Öncelikle, işlemi sonlu veya sonsuz bir küme üzerinde yapmak istediğinizi seçin.
-      </p>
-      <ul>
-        <li><strong>Sonlu küme</strong> seçtiğinizde, elemanları virgülle ayırarak yazmanız gerekir. (Örneğin: 1,2,3,4)
-        </li>
-        <li><strong>Sonsuz küme</strong> seçtiğinizde, küme türünü belirtmeniz yeterlidir.</li>
-      </ul>
-      <p>Ardından, kuralınızı tanımlayın:</p>
-      <ul>
-        <li> Eğer kural bir <strong>küme</strong> şeklindeyse, köşeli parantez içinde yazılmalıdır. Örnek: [2*a*b, a*b]
-        </li>
-        <li>Normal bir kural ise doğrudan yazabilirsiniz. Örnek: a*b-7</li>
-      </ul>
-      <p>Girilen değerler işlendiğinde, fonksiyon sonucu tablo halinde ekranda görüntülenecektir.
-        Ayrıca, oluşturulan yapının hiper yapı türlerinden hangilerine uyduğunu da görebilirsiniz.</p>
-      
-
-      <button type="button" id="usageGuideBtn" class="usage-guide-btn">
-        Örneklere Git
-      </button>
-    </div>
-
-  </section>
-
-  <section class="form-section">
-    <div class="form-container">
-      <h3>Küme Türü Seç</h3>
-      <!-- Küme Tipi Seçimi -->
-      <div class="form-field button-group">
-        <button type="button" id="finiteBtn">Sonlu Küme</button>
-        <button type="button" id="infiniteBtn">Sonsuz Küme</button>
+        <button type="button" id="usageGuideBtn" class="usage-guide-btn">
+          Örneklere Git
+        </button>
       </div>
-    </div>
+    </section>
 
-    <div class="set-rule">
-      <!-- Sonsuz küme -->
-      <div class="form-field" id="infinite-set">
-        <label for="infiniteOptions">Küme Seç</label>
-        <select id="infiniteOptions">
-          <option value="Z">Tam sayılar (ℤ)</option>
-          <option value="Q">Rasyonel sayılar (ℚ)</option>
-          <option value="R">Gerçel sayılar (ℝ)</option>
-          <option value="N">Doğal sayılar (ℕ)</option>
-        </select>
-      </div>
-
-      <!-- Sonlu küme -->
-      <div class="form-field" id="finite-set">
-        <label for="elements">Küme Elemanlarını Gir
-          <span class="tooltip">ℹ
-            <span class="tooltiptext">
-              Örn: 1,2,3,4
-            </span>
-          </span></label>
-        <input type="text" id="elements" placeholder="1,2,3" />
-      </div>
-
-      <!-- Ortak kural kısmı -->
-      <div class="form-field">
-        <label for="rules">Kuralları Tanımla
-          <span class="tooltip">ℹ
-            <span class="tooltiptext">
-              Örn: a*b ya da [2*a*b, a*b]
-            </span>
-          </span></label>
-        <input type="text" id="rules" placeholder="a*b" />
-      </div>
-    </div>
-    <button id="showResult" onclick="showResults()">Sonuçları Göster</button>
-
-    <!--Üçgen-->
-    <div class="custom-shape-divider-bottom-1757106152">
-      <svg data-name="Layer 1" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 120" preserveAspectRatio="none">
-        <path d="M598.97 114.72L0 0 0 120 1200 120 1200 0 598.97 114.72z" class="shape-fill"></path>
-      </svg>
-    </div>
-  </section>
-
-  <!-- Sonuçlar  -->
-  <section class="content-section reverse" id="results-section">
-    <div class="text">
-      <div id="result"></div>
-      <div class="results-extras">
-        <div id="structure-tests" class="tests"></div>
-
-        <div id="ai-assistant" class="ai-box">
-          <div class="ai-header">
-            <h4>Yapay Zeka</h4>
-            <span class="ai-badge">Öneri</span>
-          </div>
-          <p id="ai-message" class="ai-body"></p>
+    <section class="form-section">
+      <div class="form-container">
+        <h3>Küme Türü Seç</h3>
+        <!-- Küme Tipi Seçimi -->
+        <div class="form-field button-group">
+          <button type="button" id="finiteBtn">Sonlu Küme</button>
+          <button type="button" id="infiniteBtn">Sonsuz Küme</button>
         </div>
       </div>
-    </div>
-  </section>
 
-  <section class="content-section" id="usage-guide">
-    
-    <!-- Örnekler Tab Alanı -->
-    <div class="examples-section">
-      <h3>Örnekler</h3>
+      <div class="set-rule">
+        <!-- Sonsuz küme -->
+        <div class="form-field" id="infinite-set">
+          <label for="infiniteOptions">Küme Seç</label>
+          <select id="infiniteOptions">
+            <option value="Z">Tam sayılar (ℤ)</option>
+            <option value="Q">Rasyonel sayılar (ℚ)</option>
+            <option value="R">Gerçel sayılar (ℝ)</option>
+            <option value="N">Doğal sayılar (ℕ)</option>
+          </select>
+        </div>
 
-      <!-- Tab Butonları -->
-      <div class="example-tabs">
-        <button class="tab-btn active" data-tab="finite1">Sonlu 1</button>
-        <button class="tab-btn" data-tab="finite2">Sonlu 2</button>
-        <button class="tab-btn" data-tab="finite3">Sonlu 3</button>
-        <button class="tab-btn" data-tab="infinite1">Sonsuz 1</button>
+        <!-- Sonlu küme -->
+        <div class="form-field" id="finite-set">
+          <label for="elements"
+            >Küme Elemanlarını Gir
+            <span class="tooltip"
+              >ℹ
+              <span class="tooltiptext"> Örn: 1,2,3,4 </span>
+            </span></label
+          >
+          <input type="text" id="elements" placeholder="1,2,3" />
+        </div>
+
+        <!-- Ortak kural kısmı -->
+        <div class="form-field">
+          <label for="rules"
+            >Kuralları Tanımla
+            <span class="tooltip"
+              >ℹ
+              <span class="tooltiptext"> Örn: a*b ya da [2*a*b, a*b] </span>
+            </span></label
+          >
+          <input type="text" id="rules" placeholder="a*b" />
+        </div>
       </div>
+      <button id="showResult" onclick="showResults()">Sonuçları Göster</button>
 
-      <!-- Tab İçerikleri -->
-      <div class="tab-content active" id="finite1"></div>
+      <!--Üçgen-->
+      <div class="custom-shape-divider-bottom-1757106152">
+        <svg
+          data-name="Layer 1"
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 1200 120"
+          preserveAspectRatio="none"
+        >
+          <path
+            d="M598.97 114.72L0 0 0 120 1200 120 1200 0 598.97 114.72z"
+            class="shape-fill"
+          ></path>
+        </svg>
+      </div>
+    </section>
 
-      <div class="tab-content" id="finite2"></div>
+    <!-- Sonuçlar  -->
+    <section class="content-section reverse" id="results-section">
+      <div class="text">
+        <div id="result"></div>
+        <div class="results-extras">
+          <div id="structure-tests" class="tests"></div>
 
-      <div class="tab-content" id="finite3"></div>
+          <div id="ai-assistant" class="ai-box">
+            <div class="ai-header">
+              <h4>Model Önerisi</h4>
+              <span class="ai-badge">Öneri</span>
+            </div>
+            <p id="ai-message" class="ai-body"></p>
+          </div>
+        </div>
+      </div>
+    </section>
 
-      <div class="tab-content" id="infinite1"></div>
+    <section class="content-section" id="usage-guide">
+      <!-- Örnekler Tab Alanı -->
+      <div class="examples-section">
+        <h3>Örnekler</h3>
 
-    </div>
-  </section>
-  <div id="footer"></div>
-</body>
+        <!-- Tab Butonları -->
+        <div class="example-tabs">
+          <button class="tab-btn active" data-tab="finite1">Sonlu 1</button>
+          <button class="tab-btn" data-tab="finite2">Sonlu 2</button>
+          <button class="tab-btn" data-tab="finite3">Sonlu 3</button>
+          <button class="tab-btn" data-tab="infinite1">Sonsuz 1</button>
+        </div>
 
+        <!-- Tab İçerikleri -->
+        <div class="tab-content active" id="finite1"></div>
+
+        <div class="tab-content" id="finite2"></div>
+
+        <div class="tab-content" id="finite3"></div>
+
+        <div class="tab-content" id="infinite1"></div>
+      </div>
+    </section>
+    <div id="footer"></div>
+  </body>
 </html>
