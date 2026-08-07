@@ -384,7 +384,7 @@
           <div class="info">
             <div class="info-row"><div class="small">Modulus (p)</div><div id="modVal" class="mono">23</div></div>
             <div class="info-row"><div class="small">Üreteç (g)</div><div id="genVal" class="mono">5</div></div>
-            <div style="padding-top:8px"><button class="btn" onclick="resetSim()">Sıfırla</button> <button class="btn warn" onclick="toggleEve()" id="eveBtn">Eve: Pasif</button></div>
+            <div style="padding-top:8px"><button class="btn" onclick="resetSim()">Sıfırla</button> <button class="btn warn" onclick="toggleEve()" id="eveBtn">Eve: Pasif</button> <button class="btn warn" onclick="eveBruteForce()">Eve: Kaba Kuvvet Dene</button></div>
           </div>
         </div>
       </div>
@@ -453,6 +453,7 @@
             <li>Alice veya Bob'u seçin ve "Genel Anahtar Hesapla" butonuna tıklayın</li>
             <li>Her iki tarafın genel anahtarları hesaplandıktan sonra ortak sırlar otomatik hesaplanır</li>
             <li>Eve'yi aktif ederek MITM saldırısını simüle edin</li>
+            <li>"Eve: Kaba Kuvvet Dene" ile gerçek bir özel anahtar arama saldırısı çalıştırın</li>
             <li>Mesaj göndererek iletişimi test edin</li>
           </ol>
         </div>
@@ -516,7 +517,7 @@
         const p = document.createElement('div'); p.innerHTML = `
           <div class="info-row"><div class="small">Düğüm</div><div class="mono">EVE (MITM)</div></div>
           <div class="info-row"><div class="small">Durum</div><div class="mono">${state.eveActive? 'AKTİF':'PASİF'}</div></div>
-          <div style="margin-top:8px;display:flex;gap:8px"><button class="btn" onclick="toggleEve()">Eve Toggle</button><button class="btn" onclick="inspectLast()">Son Paketleri İncele</button></div>
+          <div style="margin-top:8px;display:flex;gap:8px"><button class="btn" onclick="toggleEve()">Eve Toggle</button><button class="btn" onclick="inspectLast()">Son Paketleri İncele</button><button class="btn warn" onclick="eveBruteForce()">Kaba Kuvvet Dene</button></div>
         `; el.appendChild(p);
       }
     }
@@ -699,6 +700,31 @@
     }
 
     function toggleEve(){ state.eveActive = !state.eveActive; document.getElementById('eveBtn').textContent = 'Eve: ' + (state.eveActive? 'Aktif':'Pasif'); renderSelected(); log('Eve durumu -> ' + (state.eveActive? 'AKTİF':'PASİF')); }
+
+    // Eve: backend'deki gerçek kaba-kuvvet (brute-force) saldırısını tetikler.
+    async function eveBruteForce(){
+      if(!state.alicePublic || !state.bobPublic){
+        log('Eve: Önce her iki tarafın genel anahtarları hesaplanmalı.');
+        alert('Eve saldırısı için önce Alice ve Bob genel anahtarlarını hesaplamalı.');
+        return;
+      }
+      const rule = document.getElementById('ruleInput').value;
+      log('Eve, özel anahtarı bulmak için kaba kuvvet araması başlattı...');
+      try{
+        const response = await fetch(`${API_BASE_URL}/api/crypto/eve-attack`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            rule, generator: state.generator, modulus: state.modulus,
+            publicKeyA: state.alicePublic, publicKeyB: state.bobPublic
+          })
+        });
+        const data = await response.json();
+        log(data.explanation + (data.result!=null ? ' Bulunan ortak sır: ' + data.result : ''));
+      } catch(error){
+        log("Eve API'ye bağlanamadı: " + error.message);
+      }
+    }
 
     function resetSim(){
       state.alicePublic=null; state.bobPublic=null; state.aliceSecret=null; state.bobSecret=null; state.eveActive=false;
