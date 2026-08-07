@@ -1,6 +1,7 @@
 const finiteBtn = document.getElementById("finiteBtn");
 const infiniteBtn = document.getElementById("infiniteBtn");
-const API_BASE_URL = 'https://hypercrypt.onrender.com';
+//const API_BASE_URL = "https://hypercrypt.onrender.com";
+const API_BASE_URL = "http://localhost:8080";
 
 finiteBtn.addEventListener("click", function () {
   if (this.id === "finiteBtn") {
@@ -25,98 +26,104 @@ document.getElementById("infinite-set").style.display = "none";
 finiteBtn.classList.add("active");
 
 async function showResults() {
-    const isFiniteMode = document.getElementById("finite-set").style.display === "block";
-    const rule = document.getElementById("rules").value;
-    
-    let requestData;
+  const isFiniteMode =
+    document.getElementById("finite-set").style.display === "block";
+  const rule = document.getElementById("rules").value;
 
-    // 1. Adım: Kullanıcının girdiği verilere göre isteği hazırla.
-    if (isFiniteMode) {
-        const elementsInput = document.getElementById("elements").value;
-        // Virgülle ayrılmış metni alıp, boşlukları temizleyip, sayı dizisine çevir.
-        const baseSet = elementsInput.split(',').map(el => parseInt(el.trim())).filter(num => !isNaN(num));
-        
-        if (baseSet.length === 0) {
-            alert("Lütfen geçerli bir sonlu küme girin.");
-            return;
-        }
-        
-        requestData = {
-            baseSet: baseSet,
-            rule: rule
-        };
-    } else { // Sonsuz Küme Modu
-        const domainSelect = document.getElementById("infiniteOptions");
-        const domain = domainSelect.options[domainSelect.selectedIndex].text.toUpperCase().split(" ")[0]; // "TAMSAYILAR" -> "INTEGERS" gibi. Bu backend'e uygun olmalı.
-        
-        requestData = {
-            domain: "INTEGERS", // Şimdilik sadece INTEGERS destekliyor.
-            rule: rule
-        };
+  let requestData;
+
+  // 1. Adım: Kullanıcının girdiği verilere göre isteği hazırla.
+  if (isFiniteMode) {
+    const elementsInput = document.getElementById("elements").value;
+    // Virgülle ayrılmış metni alıp, boşlukları temizleyip, sayı dizisine çevir.
+    const baseSet = elementsInput
+      .split(",")
+      .map((el) => parseInt(el.trim()))
+      .filter((num) => !isNaN(num));
+
+    if (baseSet.length === 0) {
+      alert("Lütfen geçerli bir sonlu küme girin.");
+      return;
     }
-    
-    // 2. Adım: Backend API'sine fetch ile istek gönder.
-    try {
-        const response = await fetch(`${API_BASE_URL}/api/verify`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(requestData),
-        });
 
-        const data = await response.json();
+    requestData = {
+      baseSet: baseSet,
+      rule: rule,
+    };
+  } else {
+    // Sonsuz Küme Modu
+    const domainSelect = document.getElementById("infiniteOptions");
+    const domain = domainSelect.options[domainSelect.selectedIndex].text
+      .toUpperCase()
+      .split(" ")[0]; // "TAMSAYILAR" -> "INTEGERS" gibi. Bu backend'e uygun olmalı.
 
-        // 3. Adım: Gelen cevaba göre arayüzü güncelle.
-        if (response.ok) {
-            renderSuccess(data);
-        } else {
-            renderError(data);
-        }
+    requestData = {
+      domain: "INTEGERS", // Şimdilik sadece INTEGERS destekliyor.
+      rule: rule,
+    };
+  }
 
-    } catch (error) {
-        renderError({ error: "API'ye bağlanırken bir hata oluştu: " + error.message });
+  // 2. Adım: Backend API'sine fetch ile istek gönder.
+  try {
+    const response = await fetch(`${API_BASE_URL}/api/verify`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(requestData),
+    });
+
+    const data = await response.json();
+
+    // 3. Adım: Gelen cevaba göre arayüzü güncelle.
+    if (response.ok) {
+      renderSuccess(data);
+    } else {
+      renderError(data);
     }
+  } catch (error) {
+    renderError({
+      error: "API'ye bağlanırken bir hata oluştu: " + error.message,
+    });
+  }
 }
-
 
 // --- YENİ YARDIMCI FONKSİYONLAR ---
 
 // Başarılı sonuçları ekrana yazdıran fonksiyon
 function renderSuccess(data) {
-    // Cayley Tablosunu Oluştur
-    if (data.cayleyTable) {
-        let tableHTML = `<h3>İşlem Tablosu (Cayley Table)</h3><table><thead><tr><th>ο</th>`;
-        const headers = Object.keys(data.cayleyTable);
-        headers.forEach(h => tableHTML += `<th>${h}</th>`);
-        tableHTML += `</tr></thead><tbody>`;
+  // Cayley Tablosunu Oluştur
+  if (data.cayleyTable) {
+    let tableHTML = `<h3>İşlem Tablosu (Cayley Table)</h3><table><thead><tr><th>ο</th>`;
+    const headers = Object.keys(data.cayleyTable);
+    headers.forEach((h) => (tableHTML += `<th>${h}</th>`));
+    tableHTML += `</tr></thead><tbody>`;
 
-        headers.forEach(rowKey => {
-            tableHTML += `<tr><th>${rowKey}</th>`;
-            headers.forEach(colKey => {
-                tableHTML += `<td>${data.cayleyTable[rowKey][colKey] || "-"}</td>`;
-            });
-            tableHTML += `</tr>`;
-        });
-        tableHTML += `</tbody></table>`;
-        document.getElementById("result").innerHTML = tableHTML;
-    } else {
-         document.getElementById("result").innerHTML = `<h3>Analiz Sonucu</h3>`;
-    }
+    headers.forEach((rowKey) => {
+      tableHTML += `<tr><th>${rowKey}</th>`;
+      headers.forEach((colKey) => {
+        tableHTML += `<td>${data.cayleyTable[rowKey][colKey] || "-"}</td>`;
+      });
+      tableHTML += `</tr>`;
+    });
+    tableHTML += `</tbody></table>`;
+    document.getElementById("result").innerHTML = tableHTML;
+  } else {
+    document.getElementById("result").innerHTML = `<h3>Analiz Sonucu</h3>`;
+  }
 
-    // Aksiyom Test Sonuçlarını Oluştur
-    //let testsHTML = `
-    //    <p><b>En Yüksek Yapı:</b> ${data.highestStructure || "Belirlenemedi"}</p>
-    //    <ul>
-    //        <li><span>Hipergrupoid</span><span class="pill ${data.hypergroupoid}">${data.hypergroupoid}</span></li>
-    //        <li><span>Yarı Hipergrup</span><span class="pill ${data.semihypergroup}">${data.semihypergroup}</span></li>
-    //        <li><span>Kuazi Hipergrup</span><span class="pill ${data.quasihypergroup}">${data.quasihypergroup}</span></li>
-    //        <li><span>Hipergrup</span><span class="pill ${data.hypergroup}">${data.hypergroup}</span></li>
-    //    </ul>
-    //`;
+  // Aksiyom Test Sonuçlarını Oluştur
+  //let testsHTML = `
+  //    <p><b>En Yüksek Yapı:</b> ${data.highestStructure || "Belirlenemedi"}</p>
+  //    <ul>
+  //        <li><span>Hipergrupoid</span><span class="pill ${data.hypergroupoid}">${data.hypergroupoid}</span></li>
+  //        <li><span>Yarı Hipergrup</span><span class="pill ${data.semihypergroup}">${data.semihypergroup}</span></li>
+  //        <li><span>Kuazi Hipergrup</span><span class="pill ${data.quasihypergroup}">${data.quasihypergroup}</span></li>
+  //        <li><span>Hipergrup</span><span class="pill ${data.hypergroup}">${data.hypergroup}</span></li>
+  //    </ul>
+  //`;
 
-     
-    let testsHTML = `
+  let testsHTML = `
         <p><b>En Yüksek Yapı:</b> ${data.highestStructure || "Belirlenemedi"}</p>
         
         <h5>Çarpımsal Yapı Özellikleri (*)</h5>
@@ -143,59 +150,44 @@ function renderSuccess(data) {
             </li>
         </ul>
     `;
-    document.getElementById("structure-tests").innerHTML = testsHTML;
-    
-    // AI Önerisini Göster/Gizle
-    if (data.suggestion) {
-        document.getElementById("ai-message").innerText = data.suggestion;
-        document.getElementById("ai-assistant").style.display = "block";
-    } else {
-        document.getElementById("ai-assistant").style.display = "none";
-    }
+  document.getElementById("structure-tests").innerHTML = testsHTML;
 
-    // Sonuç bölümünü görünür yap ve scroll et
-    const resultsSection = document.getElementById("results-section");
-    resultsSection.style.display = "block";
-    resultsSection.scrollIntoView({ behavior: "smooth", block: "start" });
+  // AI Önerisini Göster/Gizle
+  if (data.suggestion) {
+    document.getElementById("ai-message").innerText = data.suggestion;
+    document.getElementById("ai-assistant").style.display = "block";
+  } else {
+    document.getElementById("ai-assistant").style.display = "none";
+  }
+
+  // Sonuç bölümünü görünür yap ve scroll et
+  const resultsSection = document.getElementById("results-section");
+  resultsSection.style.display = "block";
+  resultsSection.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 // Hataları ekrana yazdıran fonksiyon
 function renderError(data) {
-    let errorHTML = `
+  let errorHTML = `
         <h3>Hata!</h3>
         <p class="error-message">${data.error || "Bilinmeyen bir hata oluştu."}</p>
     `;
-    // Eğer AI önerisi varsa, onu da gösterelim
-    if (data.suggestion) {
-        document.getElementById("ai-message").innerText = data.suggestion;
-        document.getElementById("ai-assistant").style.display = "block";
-    } else {
-        document.getElementById("ai-assistant").style.display = "none";
-    }
+  // Eğer AI önerisi varsa, onu da gösterelim
+  if (data.suggestion) {
+    document.getElementById("ai-message").innerText = data.suggestion;
+    document.getElementById("ai-assistant").style.display = "block";
+  } else {
+    document.getElementById("ai-assistant").style.display = "none";
+  }
 
-    document.getElementById("result").innerHTML = errorHTML;
-    document.getElementById("structure-tests").innerHTML = ""; // Testleri temizle
-    
-    const resultsSection = document.getElementById("results-section");
-    resultsSection.style.display = "block";
-    resultsSection.scrollIntoView({ behavior: "smooth", block: "start" });
+  document.getElementById("result").innerHTML = errorHTML;
+  document.getElementById("structure-tests").innerHTML = ""; // Testleri temizle
+
+  const resultsSection = document.getElementById("results-section");
+  resultsSection.style.display = "block";
+  resultsSection.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
-
-// --- Örnekler ve Tab Mantığı (Bu kısım aynı kalabilir) ---
-// ... (Önceki koddaki tab geçişleri ve örnekler kısmı buraya gelecek) ...
-
-
-function showAIAssistant() {
-  // Backend’den gelen yapay zeka mesajını alacağız, örnek:
-  const aiMessage =
-    "Bu küme hypergroup değil çünkü kapalı değil. Ancak semihypergroup özellikleri gösteriyor.";
-
-  document.getElementById("ai-message").innerText = aiMessage;
-  document.getElementById("ai-assistant").style.display = "block";
-}
-
-// Tab geçişleri (Bu kısmı yukarı koyabilirsin, sonra düzenle)
 document.querySelectorAll(".tab-btn").forEach((btn) => {
   btn.addEventListener("click", () => {
     document
@@ -268,8 +260,6 @@ const examples = {
       { a: "1/3", b: "3", result: "1" },
     ],
   },
-
- 
 };
 
 // Tek fonksiyon: finite mi infinite mi ayırıyor
@@ -321,11 +311,11 @@ Object.keys(examples).forEach((key) => {
 });
 
 // Fonksiyon Kullanımı butonu için scroll fonksiyonu
-document.getElementById("usageGuideBtn").addEventListener("click", function() {
+document.getElementById("usageGuideBtn").addEventListener("click", function () {
   const usageGuide = document.getElementById("usage-guide");
   const yOffset = -80; // üstten boşluk
-  const y = usageGuide.getBoundingClientRect().top + window.pageYOffset + yOffset;
+  const y =
+    usageGuide.getBoundingClientRect().top + window.pageYOffset + yOffset;
 
   window.scrollTo({ top: y, behavior: "smooth" });
-  
 });
