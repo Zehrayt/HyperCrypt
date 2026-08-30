@@ -1,0 +1,24 @@
+{
+  "_comment0": "------------ HEADER ------------",
+  "header.title": "Hiperhalkaların Modellemesi",
+  "header.subtitle": "Tübitak 2209-A Projesi",
+  "header.menuAriaLabel": "Menüyü aç/kapat",
+  "header.navHome": "<a href=\"../Anasayfa/index.html\">Anasayfa</a>",
+  "header.navHyperring": "<a href=\"../Hiperhalkalar/hiperhalka.html\">Hiperhalkalar Nedir?</a>",
+  "header.navFunction": "<a href=\"../Fonksiyon/func.html\">Fonksiyon</a>",
+  "header.navAbout": "<a href=\"../Anasayfa/index.html#hakkimizda\">Hakkımızda</a>", 
+
+  "_comment1": "------------ FOOTER ------------",
+  "footer.projectSummaryTitle": "Proje Özeti",
+  "footer.projectSummaryText": "\n        Bu proje, çarpımsal hiperhalkaların algoritmik modellenmesini\n        amaçlamaktadır. Matematiksel yapıları bilgisayar ortamında\n        deneyimleme imkanı sunar.\n      ",
+  "footer.tubitakNote": "<strong>Bu site TÜBİTAK 2209-A desteğiyle geliştirilmiştir.</strong>",
+  "footer.quickLinksTitle": "Hızlı Bağlantılar",
+  "footer.linkHome": "<a href=\"../Anasayfa/index.html\">Ana Sayfa</a>",
+  "footer.linkAbout": "<a href=\"../Anasayfa/index.html#proje\">Proje Hakkında</a>",
+  "footer.linkHyperring": "<a href=\"../Hiperhalkalar/hiperhalka.html\">Hiperhalkalar Nedir?</a>",
+  "footer.linkFunction": "<a href=\"../Fonksiyon/func.html\">Fonksiyon</a>",
+  "footer.linkAboutUs": "<a href=\"../Anasayfa/index.html#hakkimizda\">Hakkımızda</a>",
+  "footer.thanksTitle": "Teşekkürler",
+  "footer.thanksText": "\n        Projemizin danışmanı <strong>Dr. Öğretim Üyesi Elif Özel Ay</strong>’a\n        ve <strong>TÜBİTAK</strong>’a desteklerinden dolayı teşekkür ederiz.\n      ",
+  "footer.copyright": "© 2025 Çarpımsal Hiperhalkaların Algoritmik Modellemesi"
+}

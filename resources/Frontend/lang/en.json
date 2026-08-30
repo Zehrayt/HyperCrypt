@@ -1,0 +1,24 @@
+{
+  "_comment": "------------ HEADER ------------",
+  "header.title": "Modeling of Hyperrings",
+  "header.subtitle": "TÜBİTAK 2209-A Project",
+  "header.menuAriaLabel": "Open/close menu",
+  "header.navHome": "<a href=\"../Anasayfa/index.html\">Home</a>",
+  "header.navHyperring": "<a href=\"../Hiperhalkalar/hiperhalka.html\">What are Hyperrings?</a>",
+  "header.navFunction": "<a href=\"../Fonksiyon/func.html\">Function</a>",
+  "header.navAbout": "<a href=\"../Anasayfa/index.html#hakkimizda\">About Us</a>",
+
+  "_comment1": "------------ FOOTER ------------",
+  "footer.projectSummaryTitle": "Project Summary",
+  "footer.projectSummaryText": "\n        This project aims to algorithmically model multiplicative\n        hyperrings. It offers a way to experience mathematical\n        structures in a computer environment.\n      ",
+  "footer.tubitakNote": "<strong>This site was developed with the support of TÜBİTAK 2209-A.</strong>",
+  "footer.quickLinksTitle": "Quick Links",
+  "footer.linkHome": "<a href=\"../Anasayfa/index.html\">Home</a>",
+  "footer.linkAbout": "<a href=\"../Anasayfa/index.html#proje\">About the Project</a>",
+  "footer.linkHyperring": "<a href=\"../Hiperhalkalar/hiperhalka.html\">What are Hyperrings?</a>",
+  "footer.linkFunction": "<a href=\"../Fonksiyon/func.html\">Function</a>",
+  "footer.linkAboutUs": "<a href=\"../Anasayfa/index.html#hakkimizda\">About Us</a>",
+  "footer.thanksTitle": "Acknowledgements",
+  "footer.thanksText": "\n        We would like to thank our project advisor <strong>Dr. Elif Özel Ay</strong>\n        and <strong>TÜBİTAK</strong> for their support.\n      ",
+  "footer.copyright": "© 2025 Algorithmic Modeling of Multiplicative Hyperrings"
+}

@@ -5,10 +5,12 @@
   rel="stylesheet"
 />
 <link rel="stylesheet" href="./header.css" />
-<header class = "header" id="header">
+<header class="header" id="header">
   <div class="logo">
-    <h1><a href="../index.html">Hiperhalkaların Modellemesi</a></h1>
-    <p>Tübitak 2209-A Projesi</p>
+    <h1 data-i18n="header.title">
+      <a href="../index.html">Hiperhalkaların Modellemesi</a>
+    </h1>
+    <p data-i18n="header.subtitle">Tübitak 2209-A Projesi</p>
   </div>
 
   <!-- Hamburger buton -->
@@ -16,6 +18,7 @@
     class="menu-toggle"
     type="button"
     aria-label="Menüyü aç/kapat"
+    data-i18n-attr="aria-label:header.menuAriaLabel"
     aria-expanded="false"
     aria-controls="primary-navigation"
   >
@@ -24,10 +27,18 @@
 
   <nav id="primary-navigation">
     <ul>
-      <li><a href="../Anasayfa/index.html">Anasayfa</a></li>
-      <li><a href="../Hiperhalkalar/hiperhalka.html">Hiperhalka Nedir?</a></li>
-      <li><a href="../Fonksiyon/func.html">Fonksiyon</a></li>
-      <li><a href="../Anasayfa/index.html#hakkimizda">Hakkımızda</a></li>
+      <li data-i18n="header.navHome">
+        <a href="../Anasayfa/index.html">Anasayfa</a>
+      </li>
+      <li data-i18n="header.navHyperring">
+        <a href="../Hiperhalkalar/hiperhalka.html">Hiperhalkalar Nedir?</a>
+      </li>
+      <li data-i18n="header.navFunction">
+        <a href="../Fonksiyon/func.html">Fonksiyon</a>
+      </li>
+      <li data-i18n="header.navAbout">
+        <a href="../Anasayfa/index.html#hakkimizda">Hakkımızda</a>
+      </li>
     </ul>
   </nav>
 </header>
