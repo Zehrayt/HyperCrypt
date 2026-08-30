@@ -39,6 +39,12 @@
       }
     });
     document.documentElement.lang = currentLang;
+
+    // Eğer sayfada MathJax varsa (örn. Hiperhalkalar sayfası),
+    // çeviri sonrası formülleri yeniden işlet
+    if (window.MathJax && typeof window.MathJax.typesetPromise === "function") {
+      window.MathJax.typesetPromise();
+    }
   }
 
   function setLanguage(lang) {
