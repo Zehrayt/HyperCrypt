@@ -31,7 +31,11 @@
     document.querySelectorAll("[data-i18n]").forEach(function (el) {
       var key = el.getAttribute("data-i18n");
       if (Object.prototype.hasOwnProperty.call(dict, key)) {
-        el.innerHTML = dict[key];
+        if (el.tagName === "TITLE") {
+          document.title = dict[key];
+        } else {
+          el.innerHTML = dict[key];
+        }
       }
     });
     document.documentElement.lang = currentLang;
