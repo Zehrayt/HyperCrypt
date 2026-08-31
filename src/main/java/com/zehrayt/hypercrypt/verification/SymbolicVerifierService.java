@@ -26,7 +26,6 @@ public class SymbolicVerifierService {
         if (!isValidPolynomialRule(rule)) {
             result.setSuggestion("Symbolic analysis only supports polynomial rules with variables 'a' and 'b'.");
             result.setFailingAxiom("Geçersiz Kural Formatı");
-            // Diğer boolean'ları da false yapalım
             result.setSemihypergroup(false);
             result.setQuasihypergroup(false);
             result.setHypergroup(false);
@@ -37,7 +36,6 @@ public class SymbolicVerifierService {
         if (!rule.contains("*")) {
             result.setSuggestion("Symbolic analysis requires a rule that includes standard multiplication (*).");
             result.setFailingAxiom("Çarpma İçermeyen Kural");
-            // Diğer boolean'ları da false yapalım
             result.setSemihypergroup(false);
             result.setQuasihypergroup(false);
             result.setHypergroup(false);
@@ -121,44 +119,107 @@ public class SymbolicVerifierService {
     }
 
     /**
-     * Üretim Aksiyomu Testi (Reproduction Axiom)
-     * JAS kütüphanesi ile Polinom Derecesi (Total Degree) analizi.
-     * 
-     * Teori: a . H = H aksiyomunun sonsuz kümelerde (Z, Q) sağlanması için 
-     * polinomun toplam derecesi (Total Degree) 1 olmalıdır. (a.b gibi 2. derece 
-     * terimler, a.x=y denkleminin çözülebilirliğini bozar).
-     * 
-     * ExpVector.totalDeg() bazlı totalDegree() kullanıldı.
+     * Üretim Aksiyomu Testi (Reproduction Axiom) - DÜZELTİLMİŞ VERSİYON.
+     *
+     * Teori: a ο H = H aksiyomu tek bir "toplam derece" sayısıyla test edilemez;
+     * bu, a sabitken b'nin H'yi taraması (SAĞ üretim) ile b sabitken a'nın H'yi
+     * taraması (SOL üretim) olmak üzere iki AYRI koşuldur. Örneğin a^2+b kuralı
+     * sağ üretimi Z üzerinde sağlar (a sabit, b=y-a^2 alınarak her y'ye ulaşılır)
+     * ama sol üretimi sağlamaz (b sabit, a^2 hiçbir zaman negatif değer alamaz).
+     * Aynı şekilde 2a+3b gibi doğrusal bir kural bile Z üzerinde üretim aksiyomunu
+     * SAĞLAMAZ, çünkü b'nin katsayısı (3) Z'de bir birim (unit) değildir: a sabit
+     * iken 2a+3b'nin görüntü kümesi 2a+3Z'dir ve bu Z'ye eşit değildir. Q üzerinde
+     * ise katsayının sıfırdan farklı olması (bölme mümkün olduğu için) yeterlidir.
+     *
+     * Algoritma: rulePoly'nin terimleri (ExpVector bazında) tek tek gezilir.
+     *  - SAĞ üretim (b'ye göre): b'nin üssü >= 2 olan herhangi bir terim varsa
+     *    veya b'li terimin katsayısı a'ya bağlıysa (örn. a*b) sağ üretim
+     *    yapısal olarak imkansızdır. Aksi halde saf "c*b" teriminin katsayısı
+     *    c bulunur; Z'de c = ±1, Q'da c != 0 olmalıdır.
+     *  - SOL üretim (a'ya göre): simetrik olarak aynı analiz a için yapılır.
+     *  - Üretim aksiyomu (quasihypergroup), ancak HER İKİ yön de sağlanırsa geçerlidir.
      */
     private <C extends RingElem<C>> void verifyGenerationAxiom(String rule, String domain, VerificationResult result) {
         log.debug("Symbolically checking generation axiom using JAS for rule: {}", rule);
 
-        boolean isSolvable = false;
         try {
-            // JAS Kütüphanesi ile kuralı gerçek bir polinoma çeviriyoruz
             @SuppressWarnings("unchecked")
             RingFactory<C> factory = (RingFactory<C>) getCoefficientFactory(domain);
             GenPolynomialRing<C> ruleRing = new GenPolynomialRing<>(factory, new String[]{"x", "y"});
             GenPolynomial<C> rulePoly = ruleRing.parse(rule.replace("a", "x").replace("b", "y"));
 
-            // MATEMATİKSEL İSPAT ALGORİTMASI:
-            long totalDegree = rulePoly.totalDegree(); // Polinomun toplam derecesi (üslerin toplamı)
-            long degreeX = rulePoly.degree(0);    // 'a' değişkeninin (x) derecesi
-            long degreeY = rulePoly.degree(1);    // 'b' değişkeninin (y) derecesi
+            boolean isIntegerDomain = domain == null || "INTEGERS".equalsIgnoreCase(domain);
 
-            if (totalDegree > 1) {
-                // Eğer derece 1'den büyükse (örn: a*b çarpımı veya a^2 varsa), evrensel olarak çözülemez.
-                // Hakem 1'in bahsettiği "Sıfıra bölme" hatası a*b'nin 2. dereceden olmasından kaynaklanır.
-                isSolvable = false;
-                result.setSuggestion("Reproduction axiom fails mathematically. The polynomial degree is > 1 (e.g., contains 'a*b' or 'a^2'), which means the function is not surjective mapping over the domain.");
-            } else if (degreeX == 0 || degreeY == 0) {
-                // Eğer değişkenlerden biri hiç yoksa (Örn: kural sadece "a" veya "5" ise)
-                isSolvable = false;
-                result.setSuggestion("Both variables 'a' and 'b' must be present in the rule to satisfy both left and right reproduction axioms.");
-            } else {
-                // Eğer toplam derece 1 ise ve iki değişken de varsa, bu kural lineerdir (c1*a + c2*b + c3).
-                // Lineer kurallar Rasyonel sayılarda ve Tamsayılarda üretim aksiyomunu sağlar.
-                isSolvable = true;
+            C one = factory.getONE();
+            C negOne = one.negate();
+
+            // Saf "c*b" (x^0 y^1) ve saf "c*a" (x^1 y^0) terimlerinin katsayıları.
+            C yCoefficient = null;
+            boolean yStructureOk = true; // SAĞ üretim (a sabit, b tarar) için yapısal uygunluk
+
+            C xCoefficient = null;
+            boolean xStructureOk = true; // SOL üretim (b sabit, a tarar) için yapısal uygunluk
+
+            GenPolynomial<C> rem = rulePoly;
+            while (!rem.isZERO()) {
+                ExpVector ev = rem.leadingExpVector();
+                C coeff = rem.leadingBaseCoefficient();
+                rem = rem.reductum();
+
+                long ex = ev.getVal(0); // 'a' (x) üssü
+                long ey = ev.getVal(1); // 'b' (y) üssü
+
+                // --- SAĞ üretim analizi (b'ye göre) ---
+                if (ey >= 2) {
+                    yStructureOk = false; // b^2 veya üstü -> tek değişkenli çözülebilirlik garanti edilemez
+                } else if (ey == 1) {
+                    if (ex != 0) {
+                        yStructureOk = false; // katsayı a'ya bağlı (örn. a*b terimi)
+                    } else {
+                        yCoefficient = coeff; // saf c*b terimi
+                    }
+                }
+                // ey == 0 olan terimler b-doğrusallığını bozmaz (sabit kaydırma)
+
+                // --- SOL üretim analizi (a'ya göre) ---
+                if (ex >= 2) {
+                    xStructureOk = false;
+                } else if (ex == 1) {
+                    if (ey != 0) {
+                        xStructureOk = false; // katsayı b'ye bağlı
+                    } else {
+                        xCoefficient = coeff; // saf c*a terimi
+                    }
+                }
+            }
+
+            boolean rightReproduction = yStructureOk && yCoefficient != null
+                    && (isIntegerDomain ? (yCoefficient.equals(one) || yCoefficient.equals(negOne))
+                                        : !yCoefficient.isZERO());
+
+            boolean leftReproduction = xStructureOk && xCoefficient != null
+                    && (isIntegerDomain ? (xCoefficient.equals(one) || xCoefficient.equals(negOne))
+                                        : !xCoefficient.isZERO());
+
+            boolean isSolvable = rightReproduction && leftReproduction;
+
+            if (!isSolvable) {
+                StringBuilder reasons = new StringBuilder();
+                String unitHint = isIntegerDomain
+                        ? "must be a constant equal to +1 or -1 (a unit in Z)"
+                        : "must be a nonzero constant (Q allows division)";
+                if (!rightReproduction) {
+                    reasons.append("Right reproduction (a\u2218H=H) fails: the coefficient of 'b' ")
+                            .append(unitHint).append(".");
+                }
+                if (!leftReproduction) {
+                    if (reasons.length() > 0) {
+                        reasons.append(" ");
+                    }
+                    reasons.append("Left reproduction (H\u2218a=H) fails: the coefficient of 'a' ")
+                            .append(unitHint).append(".");
+                }
+                result.setSuggestion(reasons.toString());
             }
 
             result.setQuasihypergroup(isSolvable);
