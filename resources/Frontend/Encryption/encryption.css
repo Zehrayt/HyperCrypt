@@ -12,7 +12,13 @@
 
 * {
   box-sizing: border-box;
-  font-family: "Inter", system-ui, Segoe UI, Roboto, "Helvetica Neue", Arial;
+  font-family:
+    "Inter",
+    system-ui,
+    Segoe UI,
+    Roboto,
+    "Helvetica Neue",
+    Arial;
 }
 
 html,
@@ -172,7 +178,10 @@ input:checked + .slider:before {
   font-size: 18px;
   font-weight: 600;
   cursor: pointer;
-  transition: background-color 0.2s, border-color 0.2s, box-shadow 0.2s;
+  transition:
+    background-color 0.2s,
+    border-color 0.2s,
+    box-shadow 0.2s;
   position: relative; /* Sayı girişi için */
   display: flex;
   flex-direction: column;
@@ -450,7 +459,8 @@ input:checked + .slider:before {
   margin: 0 0 12px 0;
 }
 
-.info-section ul, .info-section ol {
+.info-section ul,
+.info-section ol {
   color: #e6eef6;
   padding-left: 20px;
   margin: 0;
@@ -519,18 +529,51 @@ input:checked + .slider:before {
   color: white;
 }
 
+/* language switcher buttons */
+.lang-switch {
+  display: flex;
+  gap: 6px;
+  margin-left: 12px;
+}
+
+.lang-switch-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  color: inherit;
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.lang-switch-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.lang-switch-btn.active {
+  background: #6c5ce7;
+  color: white;
+  border-color: transparent;
+}
+
 /* Animations */
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes slideIn {
-  from { 
+  from {
     opacity: 0;
     transform: translateY(-20px) scale(0.95);
   }
-  to { 
+  to {
     opacity: 1;
     transform: translateY(0) scale(1);
   }
@@ -550,7 +593,10 @@ input:checked + .slider:before {
     margin-top: 10px;
   }
   .keyboard-grid {
-    grid-template-columns: repeat(auto-fit, minmax(40px, 1fr)); /* Daha küçük tuşlar */
+    grid-template-columns: repeat(
+      auto-fit,
+      minmax(40px, 1fr)
+    ); /* Daha küçük tuşlar */
     gap: 5px;
   }
   .key {
@@ -560,18 +606,20 @@ input:checked + .slider:before {
   .key .key-value-input {
     font-size: 12px;
   }
-  
+
   /* Pop-up responsive adjustments */
   .popup-content {
     width: 95%;
     margin: 20px;
   }
-  
-  .popup-header, .popup-body {
+
+  .popup-header,
+  .popup-body {
     padding: 16px;
   }
-  
-  .help-button, .home-button {
+
+  .help-button,
+  .home-button {
     width: 48px;
     height: 48px;
     font-size: 18px;

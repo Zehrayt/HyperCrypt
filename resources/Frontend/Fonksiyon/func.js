@@ -42,7 +42,9 @@ async function showResults() {
       .filter((num) => !isNaN(num));
 
     if (baseSet.length === 0) {
-      alert("Lütfen geçerli bir sonlu küme girin.");
+      alert(
+        t("func.invalidFiniteSetAlert", "Lütfen geçerli bir sonlu küme girin."),
+      );
       return;
     }
 
@@ -83,7 +85,9 @@ async function showResults() {
     }
   } catch (error) {
     renderError({
-      error: "API'ye bağlanırken bir hata oluştu: " + error.message,
+      error:
+        t("func.apiConnectionError", "API'ye bağlanırken bir hata oluştu: ") +
+        error.message,
     });
   }
 }
@@ -94,7 +98,7 @@ async function showResults() {
 function renderSuccess(data) {
   // Cayley Tablosunu Oluştur
   if (data.cayleyTable) {
-    let tableHTML = `<h3>İşlem Tablosu (Cayley Table)</h3><table><thead><tr><th>ο</th>`;
+    let tableHTML = `<h3>${t("func.cayleyTableTitle", "İşlem Tablosu (Cayley Table)")}</h3><table><thead><tr><th>ο</th>`;
     const headers = Object.keys(data.cayleyTable);
     headers.forEach((h) => (tableHTML += `<th>${h}</th>`));
     tableHTML += `</tr></thead><tbody>`;
@@ -109,43 +113,34 @@ function renderSuccess(data) {
     tableHTML += `</tbody></table>`;
     document.getElementById("result").innerHTML = tableHTML;
   } else {
-    document.getElementById("result").innerHTML = `<h3>Analiz Sonucu</h3>`;
+    document.getElementById("result").innerHTML =
+      `<h3>${t("func.analysisResultTitle", "Analiz Sonucu")}</h3>`;
   }
 
   // Aksiyom Test Sonuçlarını Oluştur
-  //let testsHTML = `
-  //    <p><b>En Yüksek Yapı:</b> ${data.highestStructure || "Belirlenemedi"}</p>
-  //    <ul>
-  //        <li><span>Hipergrupoid</span><span class="pill ${data.hypergroupoid}">${data.hypergroupoid}</span></li>
-  //        <li><span>Yarı Hipergrup</span><span class="pill ${data.semihypergroup}">${data.semihypergroup}</span></li>
-  //        <li><span>Kuazi Hipergrup</span><span class="pill ${data.quasihypergroup}">${data.quasihypergroup}</span></li>
-  //        <li><span>Hipergrup</span><span class="pill ${data.hypergroup}">${data.hypergroup}</span></li>
-  //    </ul>
-  //`;
-
   let testsHTML = `
-        <p><b>En Yüksek Yapı:</b> ${data.highestStructure || "Belirlenemedi"}</p>
+        <p><b>${t("func.highestStructureLabel", "En Yüksek Yapı:")}</b> ${data.highestStructure || t("func.undetermined", "Belirlenemedi")}</p>
         
-        <h5>Çarpımsal Yapı Özellikleri (*)</h5>
+        <h5>${t("func.multPropertiesTitle", "Çarpımsal Yapı Özellikleri (*)")}</h5>
         <ul>
             <li>
-              <span>Yarı Hipergrup (Birleşme)</span>
+              <span>${t("func.semihypergroupLabel", "Yarı Hipergrup (Birleşme)")}</span>
               <span class="pill ${data.semihypergroup}">${data.semihypergroup}</span>
             </li>
             <li>
-              <span>Kuazi Hipergrup (Üretim)</span>
+              <span>${t("func.quasihypergroupLabel", "Kuazi Hipergrup (Üretim)")}</span>
               <span class="pill ${data.quasihypergroup}">${data.quasihypergroup}</span>
             </li>
         </ul>
 
-        <h5>Hiperhalka Özellikleri (+, *)</h5>
+        <h5>${t("func.hyperringPropertiesTitle", "Hiperhalka Özellikleri (+, *)")}</h5>
         <ul>
             <li>
-              <span>Dağılma Özelliği</span>
+              <span>${t("func.distributiveLabel", "Dağılma Özelliği")}</span>
               <span class="pill ${data.isDistributive}">${data.isDistributive}</span>
             </li>
             <li>
-              <span>Negatif Özelliği</span>
+              <span>${t("func.negativePropertyLabel", "Negatif Özelliği")}</span>
               <span class="pill ${data.hasNegativeProperty}">${data.hasNegativeProperty}</span>
             </li>
         </ul>
@@ -169,8 +164,8 @@ function renderSuccess(data) {
 // Hataları ekrana yazdıran fonksiyon
 function renderError(data) {
   let errorHTML = `
-        <h3>Hata!</h3>
-        <p class="error-message">${data.error || "Bilinmeyen bir hata oluştu."}</p>
+        <h3>${t("func.errorTitle", "Hata!")}</h3>
+        <p class="error-message">${data.error || t("func.unknownError", "Bilinmeyen bir hata oluştu.")}</p>
     `;
   // Eğer AI önerisi varsa, onu da gösterelim
   if (data.suggestion) {

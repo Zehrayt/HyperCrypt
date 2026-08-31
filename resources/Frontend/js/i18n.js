@@ -38,6 +38,20 @@
         }
       }
     });
+
+    // placeholder / title / aria-label gibi attribute çevirileri
+    document.querySelectorAll("[data-i18n-attr]").forEach(function (el) {
+      var spec = el.getAttribute("data-i18n-attr");
+      spec.split(";").forEach(function (pair) {
+        var parts = pair.split(":");
+        var attr = parts[0];
+        var key = parts[1];
+        if (attr && key && Object.prototype.hasOwnProperty.call(dict, key)) {
+          el.setAttribute(attr, dict[key]);
+        }
+      });
+    });
+
     document.documentElement.lang = currentLang;
 
     // Eğer sayfada MathJax varsa (örn. Hiperhalkalar sayfası),
@@ -72,6 +86,15 @@
       return currentLang;
     },
   };
+
+  // Dil değiştirici butonlara tıklamayı dinle
+  document.addEventListener("click", function (e) {
+    var btn = e.target.closest(".lang-switch-btn");
+    if (btn) {
+      var lang = btn.getAttribute("data-lang");
+      setLanguage(lang);
+    }
+  });
 
   // header/footer sonradan DOM'a eklendiğinde çeviriyi tekrar uygula
   document.addEventListener("partialsLoaded", function () {

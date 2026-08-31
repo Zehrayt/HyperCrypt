@@ -1,27 +1,43 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="tr">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Hiper Şifreleme Modülü</title>
+    <title data-i18n="enc.heading">Hiper Şifreleme Modülü</title>
     <link
       href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap"
       rel="stylesheet"
     />
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css"
+    />
     <link rel="stylesheet" href="encryption.css" />
+    <script src="../js/i18n.js" defer></script>
   </head>
   <body>
     <div class="container">
       <header>
-        <h1>Hiper Şifreleme Modülü</h1>
+        <h1 data-i18n="enc.heading">Hiper Şifreleme Modülü</h1>
         <div class="mode-toggle">
-          <span class="mode-label">Custom Map Mod</span>
+          <span class="mode-label" data-i18n="enc.modeCustomLabel"
+            >Custom Map Mod</span
+          >
           <label class="switch">
             <input type="checkbox" id="modeSwitcher" />
             <span class="slider round"></span>
           </label>
-          <span class="mode-label">Binary Mod</span>
+          <span class="mode-label" data-i18n="enc.modeBinaryLabel"
+            >Binary Mod</span
+          >
+          <div class="lang-switch">
+            <button class="lang-switch-btn" data-lang="tr" type="button">
+              TR
+            </button>
+            <button class="lang-switch-btn" data-lang="en" type="button">
+              EN
+            </button>
+          </div>
         </div>
       </header>
 
@@ -32,6 +48,7 @@
             id="customMessageInput"
             placeholder="Mesajınızı buraya yazın..."
             rows="4"
+            data-i18n-attr="placeholder:enc.messagePlaceholder"
           ></textarea>
         </div>
 
@@ -44,26 +61,33 @@
 
           <div class="rule-preview-section">
             <div class="rule-input-group">
-              <label for="customRuleInput">Kural:</label>
+              <label for="customRuleInput" data-i18n="enc.ruleLabel"
+                >Kural:</label
+              >
               <textarea
                 id="customRuleInput"
                 placeholder="Örn: (x * 2) % 26"
                 rows="3"
+                data-i18n-attr="placeholder:enc.customRulePlaceholder"
               ></textarea>
             </div>
             <div class="preview-section">
-              <h3>Şifreli Önizleme:</h3>
+              <h3 data-i18n="enc.encryptedPreviewTitle">Şifreli Önizleme:</h3>
               <div id="customEncryptedPreview" class="preview-output"></div>
             </div>
           </div>
         </div>
 
-        <button id="sendCustomButton" class="btn primary">
+        <button
+          id="sendCustomButton"
+          class="btn primary"
+          data-i18n="enc.sendBtn"
+        >
           Şifrele ve Gönder
         </button>
 
         <div class="result-section">
-          <h3>İletişim Sonucu:</h3>
+          <h3 data-i18n="enc.commResultTitle">İletişim Sonucu:</h3>
           <div class="communication-log" id="customCommunicationLog">
             <!-- Mesaj ve çözüm detayları buraya gelecek -->
           </div>
@@ -77,30 +101,38 @@
             id="binaryMessageInput"
             placeholder="Mesajınızı buraya yazın..."
             rows="4"
+            data-i18n-attr="placeholder:enc.messagePlaceholder"
           ></textarea>
         </div>
 
         <div class="binary-grid">
           <div class="binary-rule-section">
-            <label for="binaryRuleInput">Uygulanacak Kural (Bit Başına):</label>
+            <label for="binaryRuleInput" data-i18n="enc.binaryRuleLabel"
+              >Uygulanacak Kural (Bit Başına):</label
+            >
             <textarea
               id="binaryRuleInput"
               placeholder="Örn: bit ^ 1 (XOR 1)"
               rows="3"
+              data-i18n-attr="placeholder:enc.binaryRulePlaceholder"
             ></textarea>
             <div class="preview-section">
-              <h3>Binary Önizleme:</h3>
+              <h3 data-i18n="enc.binaryPreviewTitle">Binary Önizleme:</h3>
               <div id="binaryPreviewOutput" class="preview-output"></div>
             </div>
           </div>
         </div>
 
-        <button id="sendBinaryButton" class="btn primary">
+        <button
+          id="sendBinaryButton"
+          class="btn primary"
+          data-i18n="enc.sendBtn"
+        >
           Şifrele ve Gönder
         </button>
 
         <div class="result-section">
-          <h3>İletişim Sonucu:</h3>
+          <h3 data-i18n="enc.commResultTitle">İletişim Sonucu:</h3>
           <div class="communication-log" id="binaryCommunicationLog">
             <!-- Mesaj ve çözüm detayları buraya gelecek -->
           </div>
@@ -112,53 +144,95 @@
     <div id="infoPopup" class="popup-overlay">
       <div class="popup-content">
         <div class="popup-header">
-          <h3>Hiper Şifreleme Modülü Hakkında</h3>
+          <h3 data-i18n="enc.popupTitle">Hiper Şifreleme Modülü Hakkında</h3>
           <button class="popup-close" onclick="closePopup()">&times;</button>
         </div>
         <div class="popup-body">
           <div class="info-section">
-            <h4>🔐 Hiper Şifreleme Sistemi</h4>
-            <p>Bu modül, hiperhalkalar kullanarak geliştirilmiş şifreleme tekniklerini gösterir. Klasik şifreleme yöntemlerinden farklı olarak, hiperhalka yapısı daha karmaşık ve güvenli şifreleme sağlar.</p>
+            <h4 data-i18n="enc.infoSystemTitle">🔐 Hiper Şifreleme Sistemi</h4>
+            <p data-i18n="enc.infoSystemText">
+              Bu modül, hiperhalkalar kullanarak geliştirilmiş şifreleme
+              tekniklerini gösterir. Klasik şifreleme yöntemlerinden farklı
+              olarak, hiperhalka yapısı daha karmaşık ve güvenli şifreleme
+              sağlar.
+            </p>
           </div>
           <div class="info-section">
-            <h4>🎯 İki Şifreleme Modu</h4>
+            <h4 data-i18n="enc.infoModesTitle">🎯 İki Şifreleme Modu</h4>
             <ul>
-              <li><strong>Custom Map Mod:</strong> Klavye tuşlarını özelleştirerek harf-harf şifreleme</li>
-              <li><strong>Binary Mod:</strong> Metni binary formata çevirerek bit seviyesinde şifreleme</li>
+              <li data-i18n="enc.infoModeCustom">
+                <strong>Custom Map Mod:</strong> Klavye tuşlarını özelleştirerek
+                harf-harf şifreleme
+              </li>
+              <li data-i18n="enc.infoModeBinary">
+                <strong>Binary Mod:</strong> Metni binary formata çevirerek bit
+                seviyesinde şifreleme
+              </li>
             </ul>
           </div>
           <div class="info-section">
-            <h4>⚙️ Nasıl Kullanılır</h4>
+            <h4 data-i18n="enc.infoHowTitle">⚙️ Nasıl Kullanılır</h4>
             <ol>
-              <li>Üst kısımdaki toggle ile mod seçimi yapın</li>
-              <li>Mesajınızı yazın</li>
-              <li>Şifreleme kuralınızı tanımlayın</li>
-              <li>Önizleme bölümünde sonucu kontrol edin</li>
-              <li>"Şifrele ve Gönder" butonuna tıklayın</li>
+              <li data-i18n="enc.infoHow1">
+                Üst kısımdaki toggle ile mod seçimi yapın
+              </li>
+              <li data-i18n="enc.infoHow2">Mesajınızı yazın</li>
+              <li data-i18n="enc.infoHow3">Şifreleme kuralınızı tanımlayın</li>
+              <li data-i18n="enc.infoHow4">
+                Önizleme bölümünde sonucu kontrol edin
+              </li>
+              <li data-i18n="enc.infoHow5">
+                "Şifrele ve Gönder" butonuna tıklayın
+              </li>
             </ol>
           </div>
           <div class="info-section">
-            <h4>🔧 Teknik Detaylar</h4>
-            <p><strong>Custom Map Mod:</strong> Her harf için özel değer atayarak şifreleme</p>
-            <p><strong>Binary Mod:</strong> Metni 0 ve 1'lere çevirerek bit işlemleri</p>
-            <p><strong>Kural Sistemi:</strong> JavaScript fonksiyonları ile özel şifreleme algoritmaları</p>
+            <h4 data-i18n="enc.infoTechTitle">🔧 Teknik Detaylar</h4>
+            <p data-i18n="enc.infoTechCustom">
+              <strong>Custom Map Mod:</strong> Her harf için özel değer atayarak
+              şifreleme
+            </p>
+            <p data-i18n="enc.infoTechBinary">
+              <strong>Binary Mod:</strong> Metni 0 ve 1'lere çevirerek bit
+              işlemleri
+            </p>
+            <p data-i18n="enc.infoTechRule">
+              <strong>Kural Sistemi:</strong> JavaScript fonksiyonları ile özel
+              şifreleme algoritmaları
+            </p>
           </div>
           <div class="info-section">
-            <h4>💡 Örnek Kurallar</h4>
-            <p><strong>Custom Map:</strong> (x * 2) % 26, (x + 3) % 26</p>
-            <p><strong>Binary:</strong> bit ^ 1 (XOR), bit & 0 (AND), bit | 1 (OR)</p>
+            <h4 data-i18n="enc.infoExamplesTitle">💡 Örnek Kurallar</h4>
+            <p data-i18n="enc.infoExampleCustom">
+              <strong>Custom Map:</strong> (x * 2) % 26, (x + 3) % 26
+            </p>
+            <p data-i18n="enc.infoExampleBinary">
+              <strong>Binary:</strong> bit ^ 1 (XOR), bit & 0 (AND), bit | 1
+              (OR)
+            </p>
           </div>
         </div>
       </div>
     </div>
 
     <!-- Help Button -->
-    <button id="helpButton" class="help-button" onclick="openPopup()" title="Yardım">
+    <button
+      id="helpButton"
+      class="help-button"
+      onclick="openPopup()"
+      title="Yardım"
+      data-i18n-attr="title:enc.helpTitle"
+    >
       <i class="fas fa-question"></i>
     </button>
 
     <!-- Home Button -->
-    <a href="../Anasayfa/index.html" class="home-button" title="Ana Sayfaya Dön">
+    <a
+      href="../Anasayfa/index.html"
+      class="home-button"
+      title="Ana Sayfaya Dön"
+      data-i18n-attr="title:enc.homeTitle"
+    >
       <i class="fas fa-home"></i>
     </a>
 
