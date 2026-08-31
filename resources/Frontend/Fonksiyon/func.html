@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Fonksiyon</title>
+    <title data-i18n="func.pageTitle">Fonksiyon</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -26,37 +26,44 @@
     <!--Fonksiyon Hakkında-->
     <section class="content-section" id="fonksiyon">
       <div class="text">
-        <h2>Fonksiyon Kullanımı</h2>
-        <p>
+        <h2 data-i18n="func.usageTitle">Fonksiyon Kullanımı</h2>
+        <p data-i18n="func.usageIntro">
           Bu fonksiyon, girdiğiniz küme ve kurallar üzerinden hiperhalka testi
           yapmanızı sağlar. Öncelikle, işlemi sonlu veya sonsuz bir küme
           üzerinde yapmak istediğinizi seçin.
         </p>
         <ul>
-          <li>
+          <li data-i18n="func.finiteExplain">
             <strong>Sonlu küme</strong> seçtiğinizde, elemanları virgülle
             ayırarak yazmanız gerekir. (Örneğin: 1,2,3,4)
           </li>
-          <li>
+          <li data-i18n="func.infiniteExplain">
             <strong>Sonsuz küme</strong> seçtiğinizde, küme türünü belirtmeniz
             yeterlidir.
           </li>
         </ul>
-        <p>Ardından, kuralınızı tanımlayın:</p>
+        <p data-i18n="func.ruleIntro">Ardından, kuralınızı tanımlayın:</p>
         <ul>
-          <li>
+          <li data-i18n="func.ruleSetExplain">
             Eğer kural bir <strong>küme</strong> şeklindeyse, köşeli parantez
             içinde yazılmalıdır. Örnek: [2*a*b, a*b]
           </li>
-          <li>Normal bir kural ise doğrudan yazabilirsiniz. Örnek: a*b-7</li>
+          <li data-i18n="func.ruleNormalExplain">
+            Normal bir kural ise doğrudan yazabilirsiniz. Örnek: a*b-7
+          </li>
         </ul>
-        <p>
+        <p data-i18n="func.resultExplain">
           Girilen değerler işlendiğinde, fonksiyon sonucu tablo halinde ekranda
           görüntülenecektir. Ayrıca, oluşturulan yapının hiper yapı türlerinden
           hangilerine uyduğunu da görebilirsiniz.
         </p>
 
-        <button type="button" id="usageGuideBtn" class="usage-guide-btn">
+        <button
+          type="button"
+          id="usageGuideBtn"
+          class="usage-guide-btn"
+          data-i18n="func.goToExamplesBtn"
+        >
           Örneklere Git
         </button>
       </div>
@@ -64,29 +71,37 @@
 
     <section class="form-section">
       <div class="form-container">
-        <h3>Küme Türü Seç</h3>
+        <h3 data-i18n="func.chooseSetTypeTitle">Küme Türü Seç</h3>
         <!-- Küme Tipi Seçimi -->
         <div class="form-field button-group">
-          <button type="button" id="finiteBtn">Sonlu Küme</button>
-          <button type="button" id="infiniteBtn">Sonsuz Küme</button>
+          <button type="button" id="finiteBtn" data-i18n="func.finiteBtn">
+            Sonlu Küme
+          </button>
+          <button type="button" id="infiniteBtn" data-i18n="func.infiniteBtn">
+            Sonsuz Küme
+          </button>
         </div>
       </div>
 
       <div class="set-rule">
         <!-- Sonsuz küme -->
         <div class="form-field" id="infinite-set">
-          <label for="infiniteOptions">Küme Seç</label>
+          <label for="infiniteOptions" data-i18n="func.chooseSetLabel"
+            >Küme Seç</label
+          >
           <select id="infiniteOptions">
-            <option value="Z">Tam sayılar (ℤ)</option>
-            <option value="Q">Rasyonel sayılar (ℚ)</option>
-            <option value="R">Gerçel sayılar (ℝ)</option>
-            <option value="N">Doğal sayılar (ℕ)</option>
+            <option value="Z" data-i18n="func.optZ">Tam sayılar (ℤ)</option>
+            <option value="Q" data-i18n="func.optQ">
+              Rasyonel sayılar (ℚ)
+            </option>
+            <option value="R" data-i18n="func.optR">Gerçel sayılar (ℝ)</option>
+            <option value="N" data-i18n="func.optN">Doğal sayılar (ℕ)</option>
           </select>
         </div>
 
         <!-- Sonlu küme -->
         <div class="form-field" id="finite-set">
-          <label for="elements"
+          <label for="elements" data-i18n="func.elementsLabel"
             >Küme Elemanlarını Gir
             <span class="tooltip"
               >ℹ
@@ -98,7 +113,7 @@
 
         <!-- Ortak kural kısmı -->
         <div class="form-field">
-          <label for="rules"
+          <label for="rules" data-i18n="func.rulesLabel"
             >Kuralları Tanımla
             <span class="tooltip"
               >ℹ
@@ -108,7 +123,13 @@
           <input type="text" id="rules" placeholder="a*b" />
         </div>
       </div>
-      <button id="showResult" onclick="showResults()">Sonuçları Göster</button>
+      <button
+        id="showResult"
+        onclick="showResults()"
+        data-i18n="func.showResultsBtn"
+      >
+        Sonuçları Göster
+      </button>
 
       <!--Üçgen-->
       <div class="custom-shape-divider-bottom-1757106152">
@@ -135,8 +156,10 @@
 
           <div id="ai-assistant" class="ai-box">
             <div class="ai-header">
-              <h4>Model Önerisi</h4>
-              <span class="ai-badge">Öneri</span>
+              <h4 data-i18n="func.aiSuggestionTitle">Model Önerisi</h4>
+              <span class="ai-badge" data-i18n="func.aiSuggestionBadge"
+                >Öneri</span
+              >
             </div>
             <p id="ai-message" class="ai-body"></p>
           </div>
@@ -147,14 +170,38 @@
     <section class="content-section" id="usage-guide">
       <!-- Örnekler Tab Alanı -->
       <div class="examples-section">
-        <h3>Örnekler</h3>
+        <h3 data-i18n="func.examplesTitle">Örnekler</h3>
 
         <!-- Tab Butonları -->
         <div class="example-tabs">
-          <button class="tab-btn active" data-tab="finite1">Sonlu 1</button>
-          <button class="tab-btn" data-tab="finite2">Sonlu 2</button>
-          <button class="tab-btn" data-tab="finite3">Sonlu 3</button>
-          <button class="tab-btn" data-tab="infinite1">Sonsuz 1</button>
+          <button
+            class="tab-btn active"
+            data-tab="finite1"
+            data-i18n="func.tabFinite1"
+          >
+            Sonlu 1
+          </button>
+          <button
+            class="tab-btn"
+            data-tab="finite2"
+            data-i18n="func.tabFinite2"
+          >
+            Sonlu 2
+          </button>
+          <button
+            class="tab-btn"
+            data-tab="finite3"
+            data-i18n="func.tabFinite3"
+          >
+            Sonlu 3
+          </button>
+          <button
+            class="tab-btn"
+            data-tab="infinite1"
+            data-i18n="func.tabInfinite1"
+          >
+            Sonsuz 1
+          </button>
         </div>
 
         <!-- Tab İçerikleri -->

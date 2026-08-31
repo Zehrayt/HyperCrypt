@@ -253,7 +253,9 @@ const examples = {
   },
 
   infinite1: {
-    set: "ℚ (Rasyonel sayılar)",
+    set: "ℚ",
+    setDescKey: "func.rationalNumbersDesc",
+    setDescDefault: "Rasyonel sayılar",
     rules: "a*b ∈ ℚ",
     examples: [
       { a: "1/2", b: "2/3", result: "1/3" },
@@ -268,8 +270,8 @@ function renderExample(example) {
 
   if (Array.isArray(example.set)) {
     // Finite küme (Cayley tablosu)
-    html += `<p><b>Küme:</b> { ${example.set.join(", ")} }</p>`;
-    html += `<p><b>Kurallar:</b> ${example.rules}</p>`;
+    html += `<p><b>${t("func.setLabel", "Küme:")}</b> { ${example.set.join(", ")} }</p>`;
+    html += `<p><b>${t("func.rulesLabelShort", "Kurallar:")}</b> ${example.rules}</p>`;
     html += `<table>
       <thead>
         <tr><th>*</th>${example.set.map((el) => `<th>${el}</th>`).join("")}</tr>
@@ -288,10 +290,10 @@ function renderExample(example) {
     html += `</tbody></table>`;
   } else {
     // Infinite küme (örnek işlemler)
-    html += `<p><b>Küme:</b> ${example.set}</p>`;
-    html += `<p><b>Kurallar:</b> ${example.rules}</p>`;
+    html += `<p><b>${t("func.setLabel", "Küme:")}</b> ${example.set}${example.setDescKey ? " (" + t(example.setDescKey, example.setDescDefault) + ")" : ""}</p>`;
+    html += `<p><b>${t("func.rulesLabelShort", "Kurallar:")}</b> ${example.rules}</p>`;
     html += `<table>
-      <thead><tr><th>a</th><th>b</th><th>Sonuç</th></tr></thead>
+      <thead><tr><th>a</th><th>b</th><th>${t("func.resultColLabel", "Sonuç")}</th></tr></thead>
       <tbody>`;
 
     example.examples.forEach((ex) => {
@@ -318,4 +320,11 @@ document.getElementById("usageGuideBtn").addEventListener("click", function () {
     usageGuide.getBoundingClientRect().top + window.pageYOffset + yOffset;
 
   window.scrollTo({ top: y, behavior: "smooth" });
+});
+
+// Dil değiştiğinde örnek sekmelerini yeniden çiz
+document.addEventListener("languageChanged", function () {
+  Object.keys(examples).forEach((key) => {
+    document.getElementById(key).innerHTML = renderExample(examples[key]);
+  });
 });

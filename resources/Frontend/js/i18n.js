@@ -54,8 +54,17 @@
       currentLang = lang;
       localStorage.setItem(STORAGE_KEY, lang);
       applyTranslations();
+      document.dispatchEvent(
+        new CustomEvent("languageChanged", { detail: { lang: lang } }),
+      );
     });
   }
+
+  // JS içinden dinamik metin çevirisi için: t('anahtar', 'varsayılan metin')
+  window.t = function (key, fallback) {
+    if (Object.prototype.hasOwnProperty.call(dict, key)) return dict[key];
+    return fallback !== undefined ? fallback : key;
+  };
 
   window.HyperCryptI18n = {
     setLanguage: setLanguage,
