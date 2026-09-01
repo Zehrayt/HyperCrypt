@@ -67,31 +67,97 @@ public class AxiomVerifier {
     }
 
     /**
+     * DÜZELTME (Hakem uyarısı): "(R,+) is an abelian group" HARDCODE VARSAYILMIYOR,
+     * kullanıcının girdiği baseSet için GERÇEKTEN doğrulanıyor. Herhangi bir kısıtlama
+     * (örn. yalnızca {0,...,n-1} kabul etme) YOKTUR; kullanıcı hangi tam sayı kümesini
+     * girerse girsin, standardAddition bu küme üzerinde gerçekten bir abelyen grup
+     * oluşturuyorsa test başarılı olur, oluşturmuyorsa (örn. {2,5,9} gibi standart mod-n
+     * toplaması altında kapalı olmayan bir küme) test bunu doğru şekilde yakalar.
+     *
+     * Birleşme (associativity) ve değişme (commutativity) özellikleri test edilmiyor
+     * çünkü bunlar standardAddition'ın tanımı gereği (olağan tam sayı toplaması + mod
+     * indirgeme) HER ZAMAN sağlanır; bu, kümenin içeriğine bağlı değildir, dolayısıyla
+     * ayrıca ispatlanmasına gerek yoktur. Kümeye bağlı olan, ve bu yüzden burada
+     * gerçekten test edilen iki aksiyom şunlardır:
+     *   1) Kapanıklık: her a,b için (a+b) mod n, baseSet içinde olmalı.
+     *   2) Birim eleman: baseSet içinde öyle bir e olmalı ki her a için a+e = a.
+     *   3) Ters eleman: her a için, a+b = e olacak şekilde bir b, baseSet içinde olmalı.
+     *
+     * @return (baseSet, standardAddition) gerçekten bir abelyen grup oluşturuyorsa true.
+     */
+    public boolean verifyAdditiveGroupAxioms() {
+        log.debug("Verifying (R,+) is a genuine abelian group for the given baseSet...");
+
+        // 1. Kapanıklık: (a+b) mod n her zaman baseSet içinde kalmalı.
+        for (Integer a : baseSet) {
+            for (Integer b : baseSet) {
+                if (!baseSet.contains(standardAddition.apply(a, b))) {
+                    log.debug("Additive closure failed for (a,b) = ({},{})", a, b);
+                    return false;
+                }
+            }
+        }
+
+        // 2. Birim eleman: baseSet içinde, her a için a+e=a şartını sağlayan bir e ara.
+        Integer identity = null;
+        for (Integer candidate : baseSet) {
+            boolean isIdentity = true;
+            for (Integer a : baseSet) {
+                if (!standardAddition.apply(a, candidate).equals(a)) {
+                    isIdentity = false;
+                    break;
+                }
+            }
+            if (isIdentity) {
+                identity = candidate;
+                break;
+            }
+        }
+        if (identity == null) {
+            log.debug("No additive identity element exists within baseSet");
+            return false;
+        }
+
+        // 3. Ters eleman: her a için, a+b=identity şartını sağlayan bir b, baseSet içinde olmalı.
+        for (Integer a : baseSet) {
+            boolean hasInverse = false;
+            for (Integer b : baseSet) {
+                if (standardAddition.apply(a, b).equals(identity)) {
+                    hasInverse = true;
+                    break;
+                }
+            }
+            if (!hasInverse) {
+                log.debug("No additive inverse exists within baseSet for element {}", a);
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
      * Birleşme özelliğini kontrol eder: (a ο b) ο c = a ο (b ο c)
      * Bu, kümedeki tüm (a, b, c) üçlüleri için kontrol edilmelidir.
      * @return Birleşme özelliği sağlanıyorsa true, aksi halde false.
      */
     public boolean isAssociative() {
         log.debug("Checking for associativity...");
-        // Kümedeki tüm olası (a, b, c) üçlülerini denememiz gerekiyor.
         for (Integer a : baseSet) {
             for (Integer b : baseSet) {
                 for (Integer c : baseSet) {
-                    // Sol Taraf: (a ο b) ο c
                     Set<Integer> leftSideResult = new HashSet<>();
                     Set<Integer> firstOpResult = hyperMultiplication.apply(a, b);
                     for (Integer intermediateResult : firstOpResult) {
                         leftSideResult.addAll(hyperMultiplication.apply(intermediateResult, c));
                     }
 
-                    // Sağ Taraf: a ο (b ο c)
                     Set<Integer> rightSideResult = new HashSet<>();
                     Set<Integer> secondOpResult = hyperMultiplication.apply(b, c);
                     for (Integer intermediateResult : secondOpResult) {
                         rightSideResult.addAll(hyperMultiplication.apply(a, intermediateResult));
                     }
 
-                    // İki sonuç kümesi eşit değilse, özellik sağlanmıyor demektir.
                     if (!leftSideResult.equals(rightSideResult)) {
                         log.debug("Associativity failed for (a,b,c) = ({},{},{}) — LHS: {}, RHS: {}",
                             a, b, c, leftSideResult, rightSideResult);
@@ -100,7 +166,7 @@ public class AxiomVerifier {
                 }
             }
         }
-        return true; // Tüm üçlüler için kontrol başarılı oldu.
+        return true;
     }
 
     /**
@@ -111,7 +177,6 @@ public class AxiomVerifier {
     public boolean checkReproductionAxiom() {
         log.debug("Checking for reproduction axiom...");
         for (Integer a : baseSet) {
-            // a ο H kontrolü
             Set<Integer> leftResult = new HashSet<>();
             for (Integer h : baseSet) {
                 leftResult.addAll(hyperMultiplication.apply(a, h));
@@ -121,7 +186,6 @@ public class AxiomVerifier {
                 return false;
             }
 
-            // H ο a kontrolü
             Set<Integer> rightResult = new HashSet<>();
             for (Integer h : baseSet) {
                 rightResult.addAll(hyperMultiplication.apply(h, a));
@@ -143,11 +207,9 @@ public class AxiomVerifier {
         for (Integer a : baseSet) {
             for (Integer b : baseSet) {
                 for (Integer c : baseSet) {
-                    // Sol Taraf: a * (b + c)
                     Integer b_plus_c = standardAddition.apply(b, c);
                     Set<Integer> leftSideResult = hyperMultiplication.apply(a, b_plus_c);
 
-                    // Sağ Taraf: a*b + a*c
                     Set<Integer> a_mult_b = hyperMultiplication.apply(a, b);
                     Set<Integer> a_mult_c = hyperMultiplication.apply(a, c);
 
@@ -158,13 +220,11 @@ public class AxiomVerifier {
                         }
                     }
 
-                    // Kontrol: Sol taraf, sağ tarafın bir alt kümesi mi?
                     if (!rightSideResult.containsAll(leftSideResult)) {
                         log.debug("Distributivity failed for (a,b,c) = ({},{},{})", a, b, c);
                         return false;
                     }
 
-                    // --- SAĞDAN DAĞILMA: (b + c) * a ⊆ b*a + c*a ---
                     Set<Integer> leftSideResultR = hyperMultiplication.apply(b_plus_c, a);
                     Set<Integer> b_mult_a = hyperMultiplication.apply(b, a);
                     Set<Integer> c_mult_a = hyperMultiplication.apply(c, a);
@@ -197,11 +257,11 @@ public class AxiomVerifier {
                 Integer negB = standardNegation.apply(b);
                 Integer negA = standardNegation.apply(a);
 
-                Set<Integer> res1 = hyperMultiplication.apply(a, negB);     // a.(-b)
-                Set<Integer> res2 = hyperMultiplication.apply(negA, b);     // (-a).b
+                Set<Integer> res1 = hyperMultiplication.apply(a, negB);
+                Set<Integer> res2 = hyperMultiplication.apply(negA, b);
 
-                Set<Integer> a_mult_b = hyperMultiplication.apply(a, b);   // a.b
-                Set<Integer> res3 = new HashSet<>();                     // -(a.b)
+                Set<Integer> a_mult_b = hyperMultiplication.apply(a, b);
+                Set<Integer> res3 = new HashSet<>();
                 for (Integer x : a_mult_b) {
                     res3.add(standardNegation.apply(x));
                 }
@@ -223,7 +283,6 @@ public class AxiomVerifier {
         boolean isClosed = checkClosure();
         result.setHypergroupoid(isClosed);
 
-        // Kapanıklık yoksa diğer testleri yapmadan işlemi bitir
         if (!isClosed) {
             result.setHighestStructure("Tanımsız Yapı (Kapanıklık Sağlanmıyor)");
             result.setFailingAxiom("Kapanıklık (Closure)");
@@ -235,11 +294,21 @@ public class AxiomVerifier {
             return result;
         }
 
+        // 1.b DÜZELTME (Hakem uyarısı): "(R,+) is an abelian group" artık VARSAYILMIYOR,
+        // verilen baseSet için GERÇEKTEN doğrulanıyor (bkz. verifyAdditiveGroupAxioms).
+        // Hiçbir küme reddedilmiyor/kısıtlanmıyor; sonuç sadece hiperhalka sınıflandırmasının
+        // ne kadar güvenilir olduğunu belirlemek için kullanılıyor.
+        boolean isValidAdditiveGroup = verifyAdditiveGroupAxioms();
+
         // 2. Kapanıklık sağlandıysa diğer aksiyomları test et ve sonucunu bir değişkende sakla.
         boolean isAssociative = isAssociative();
-        boolean isDistributive = checkDistributivity();
-        boolean hasNegativeProperty = checkNegativeProperty();
         boolean isQuasihypergroup = checkReproductionAxiom();
+
+        // Dağılma ve negatif eleman testleri standardAddition/standardNegation'a dayanır;
+        // (R,+) gerçekten bir abelyen grup değilse bu testlerin sonucu matematiksel olarak
+        // anlamsız olur, bu yüzden yalnızca isValidAdditiveGroup doğruysa hesaplanırlar.
+        boolean isDistributive = isValidAdditiveGroup && checkDistributivity();
+        boolean hasNegativeProperty = isValidAdditiveGroup && checkNegativeProperty();
 
         // --- SONUÇLARI DTO'YA NET BİR ŞEKİLDE YAZ ---
         result.setSemihypergroup(isAssociative);
@@ -251,27 +320,31 @@ public class AxiomVerifier {
         result.setHypergroup(isHypergroup);
 
         // --- HİPERHALKA KONTROLÜ ---
-        // Varsayım: (R,+) değişmeli gruptur.
-        // NOT: Rota'nın tanımı 'reproduction' aksiyomunu içermediğinden, 
+        // Varsayım DEĞİL, doğrulanmış önkoşul: (R,+) gerçekten değişmeli gruptur.
+        // NOT: Rota'nın tanımı 'reproduction' aksiyomunu içermediğinden,
         // isMultiplicativeHyperring kontrolü isQuasihypergroup'tan bağımsızdır.
         // Bir yapı, hipergrup olmasa bile çarpımsal hiperhalka özelliği gösterebilir.
-        boolean isMultiplicativeHyperring = isAssociative && isDistributive && hasNegativeProperty;
+        boolean isMultiplicativeHyperring = isValidAdditiveGroup && isAssociative && isDistributive && hasNegativeProperty;
 
         // --- EN YÜKSEK YAPIYI BELİRLE (highestStructure) ---
         if (isMultiplicativeHyperring) {
             result.setHighestStructure("Çarpımsal Hiperhalka");
         } else if (!isAssociative) {
             result.setHighestStructure("Hiper yapı (ama Yarı Hipergrup değil)");
+        } else if (!isValidAdditiveGroup) {
+            // (R,+) abelyen grup olmadığı için hiperhalka sınıflandırması hiç yapılamıyor;
+            // bu, "dağılma/negatif özellik başarısız" durumundan farklı ve daha temel bir
+            // sınırlamadır, bu yüzden ayrı ve açık şekilde raporlanıyor.
+            result.setHighestStructure(isHypergroup
+                ? "Hipergrup ((R,+) abelyen grup olmadığından Hiperhalka değerlendirilemedi)"
+                : "Yarı Hipergrup ((R,+) abelyen grup olmadığından Hiperhalka değerlendirilemedi)");
         } else if (!isDistributive) {
             result.setHighestStructure(isHypergroup ? "Hipergrup (ama Hiperhalka değil)" : "Yarı Hipergrup (ama Hiperhalka değil)");
         } else {
-            // !hasNegativeProperty
             result.setHighestStructure(isHypergroup ? "Hipergrup (ama Hiperhalka değil)" : "Yarı Hipergrup (ama Hiperhalka değil)");
         }
 
         // --- FAILINGAXIOM: HİPERGRUP SEVİYESİNİ ÖNCELİKLENDİR ---
-        // failingAxiom: Hipergrup aksiyomlarını (Birleşme -> Üretim) öncelik sırasına göre raporlar.
-        // Halka özel (Distributivity/Negative) eksiklikler, 'highestStructure' ile bildirildiği için null geçilir.
         if (!isAssociative) {
             result.setFailingAxiom("Birleşme Özelliği (Madde 2)");
         } else if (!isQuasihypergroup) {

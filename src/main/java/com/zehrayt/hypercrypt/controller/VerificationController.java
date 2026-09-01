@@ -20,8 +20,6 @@ import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.stream.Collectors;
 
-// İzin verilen origin'ler merkezi olarak config/WebConfig.java üzerinden (app.cors.allowed-origins property'si
-// ile) yönetiliyor; bu sayede her endpoint'te ayrı ayrı "*" yazma riski ortadan kalkıyor.
 @RestController
 @RequestMapping("/api")
 public class VerificationController {
@@ -44,8 +42,6 @@ public class VerificationController {
         this.ruleSuggestionEngine = ruleSuggestionEngine;
     }
 
-    // Doğrulanmış (AxiomVerifier'dan geçmiş) önerileri tek bir açıklama metnine indirger;
-    // hiçbiri bulunamazsa genel bir bilgilendirme metni döner.
     private String formatVerifiedSuggestions(List<RuleSuggestionEngine.Suggestion> verified) {
         if (verified.isEmpty()) {
             return NO_SUGGESTION_FOUND_MESSAGE;
@@ -58,6 +54,13 @@ public class VerificationController {
     // kilitleyebilecek bir hizmet engelleme (DoS) vektörü oluşturur.
     private static final int MAX_BASE_SET_SIZE = 100;
 
+    // NOT: "(R,+) is an abelian group" varsayımı artık burada bir 400 hatasıyla
+    // KISITLANMIYOR. Bunun yerine AxiomVerifier.verifyAdditiveGroupAxioms() bu koşulu
+    // verilen baseSet için GERÇEKTEN doğruluyor ve sonucu VerificationResult üzerinden
+    // (highestStructure alanında) şeffafça raporluyor. Böylece kullanıcı istediği
+    // herhangi bir tam sayı kümesini deneyebilir; küme gerçekten geçerli bir abelyen
+    // grup oluşturmuyorsa (örn. {2,5,9}), sonuç bunu açıkça ve doğru şekilde belirtir.
+
     public static class VerificationRequest {
         public Set<Integer> baseSet; // Sonlu küme
         public String domain;        // Sonsuz küme
@@ -67,10 +70,7 @@ public class VerificationController {
     @PostMapping("/verify")
     public ResponseEntity<Object> verifyStructure(@RequestBody VerificationRequest request) {
         try {
-            // --- DEĞİŞİKLİK 3: Analiz tipine göre yönlendirme yapıyoruz. ---
             if (request.domain != null && !request.domain.isBlank()) {
-                
-                // --- SEMBOLİK ANALİZ YOLU (Sonsuz Küme) ---
                 VerificationResult result = symbolicVerifierService.verifySymbolically(request.rule, request.domain);
                 return ResponseEntity.ok(result);
             } 
@@ -87,8 +87,6 @@ public class VerificationController {
 
                 // 1. Kuralın içinde standart çarpma (*) içerip içermediğini kontrol et.
                 if (request.rule == null || !request.rule.contains("*")) {
-
-                    // Doğrulanmış (AxiomVerifier'dan geçmiş) bir alternatif ara.
                     String suggestionText = NO_SUGGESTION_FOUND_MESSAGE;
                     if (request.rule != null) {
                         suggestionText = formatVerifiedSuggestions(
@@ -109,31 +107,26 @@ public class VerificationController {
                     ruleParserService.parseRule(request.rule, ruleConstants);
                 
                 // 4. Adım: Aksiyom motorunu bu fonksiyonla çalıştır
+                // (verifyAll() artık içeride (R,+) abelyen grup aksiyomunu da gerçekten
+                // doğruluyor; bkz. AxiomVerifier.verifyAdditiveGroupAxioms())
                 AxiomVerifier verifier = new AxiomVerifier(request.baseSet, operation);
                 VerificationResult result = verifier.verifyAll();
 
-                Map<String, Map<String, String>> tableData = new LinkedHashMap<>(); // Sırayı korumak için LinkedHashMap
+                Map<String, Map<String, String>> tableData = new LinkedHashMap<>();
 
                 for (Integer rowElement : request.baseSet) {
                     Map<String, String> row = new LinkedHashMap<>();
-                    // Sütunlar için döngü
                     for (Integer colElement : request.baseSet) {
-                        // a ο b işlemini yap
                         Set<Integer> operationResult = operation.apply(rowElement, colElement);
-                        // Sonucu "{b, c}" gibi bir string'e çevir
                         String setResultString = operationResult.stream()
                                                                 .map(String::valueOf)
                                                                 .collect(Collectors.joining(", "));
-                        // İç map'e ekle
                         row.put(String.valueOf(colElement), "{" + setResultString + "}");
                     }
-                    // Dış map'e ekle
                     tableData.put(String.valueOf(rowElement), row);
                 }
-                // Oluşturulan tabloyu sonuç nesnesine ekle
                 result.setCayleyTable(tableData);
 
-                // 5. Adım: Aksiyomlar sağlanmadıysa doğrulanmış bir alternatif ara.
                 if (!result.isHypergroup()) {
                     String suggestionText = formatVerifiedSuggestions(
                         ruleSuggestionEngine.suggest(request.rule, request.baseSet));
@@ -141,19 +134,15 @@ public class VerificationController {
                     result.setSuggestion(suggestionText);
                 }
             
-                // 6. Adım: Başarılı sonucu döndür
                 return ResponseEntity.ok(result);
             } 
             else {
-                // Eğer ne sonlu ne de sonsuz küme bilgisi verilmediyse hata döndür.
                 throw new InvalidRuleException("İstek için 'baseSet' (sonlu küme) veya 'domain' (sonsuz küme) belirtilmelidir.");
             }
 
         } catch (InvalidRuleException e) {
-            // Kontrollü hatalar için 400 Bad Request döndür
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         } catch (Exception e) {
-            // Beklenmedik diğer tüm hatalar için 500 Internal Server Error döndür
             log.error("verify sırasında beklenmedik hata", e);
             return ResponseEntity.status(500).body(Map.of("error", "Sunucuda beklenmedik bir hata oluştu."));
         }
