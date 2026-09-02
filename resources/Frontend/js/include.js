@@ -5,6 +5,33 @@ document.addEventListener("DOMContentLoaded", () => {
     .then((res) => res.text())
     .then((data) => {
       document.getElementById("header").innerHTML = data;
+
+      // DİL BUTONLARI
+      const langButtons = document.querySelectorAll(".lang-switch-btn");
+
+      const savedLang = localStorage.getItem("language") || "tr";
+
+      function updateActiveButton(lang) {
+        langButtons.forEach((button) => {
+          button.classList.toggle("active", button.dataset.lang === lang);
+        });
+      }
+
+      // Sayfa açıldığında aktif dili göster
+      updateActiveButton(savedLang);
+
+      // Dil butonlarına tıklama
+      langButtons.forEach((button) => {
+        button.addEventListener("click", () => {
+          const selectedLang = button.dataset.lang;
+
+          localStorage.setItem("language", selectedLang);
+
+          updateActiveButton(selectedLang);
+        });
+      });
+
+      // HAMBURGER MENÜ
       const toggleBtn = document.querySelector(".menu-toggle");
       const nav = document.querySelector("#primary-navigation");
       if (toggleBtn && nav) {
