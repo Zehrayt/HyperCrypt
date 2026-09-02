@@ -85,6 +85,7 @@ header nav ul li a:hover {
   display: flex;
   gap: 6px;
   margin-left: 12px;
+  transform: translateX(-50px);
 }
 
 .lang-switch-btn {
