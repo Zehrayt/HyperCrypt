@@ -111,10 +111,22 @@ public class RuleParserService {
 
         final String functionWrapper = String.format("function(a, b) { return %s; }", ruleString);
 
-        // Bu, daha sonra kullanılacak olan ana scope (çalışma alanı).
+        // Bu, daha sonra kullanılacak olan ana scope (çalışma alanı) ve derlenmiş fonksiyon.
         final Scriptable mainScope;
+        final Function compiledFunction;
 
-        // Derleme işlemini dışarı alıyoruz
+        // Derleme işlemini dışarı alıyoruz.
+        //
+        // PERFORMANS DÜZELTMESİ: Fonksiyon burada SADECE BİR KEZ derlenir ve
+        // 'compiledFunction' içinde saklanır; aşağıda döndürülen BiFunction her
+        // çağrıda bu hazır fonksiyonu yeniden kullanır (Rhino'nun derlenmiş
+        // Function nesneleri, her çağrı için ayrı bir Context açılsa bile güvenle
+        // yeniden kullanılabilir). Önceden fonksiyon her apply() çağrısında
+        // yeniden derleniyordu; AxiomVerifier'ın O(n^3) aksiyom kontrollerinde
+        // (bkz. isAssociative/checkDistributivity) bu, 100 elemanlı bir baseSet
+        // için milyonlarca gereksiz Rhino derlemesine yol açabiliyor ve
+        // MAX_BASE_SET_SIZE=100 sınırının varsaydığı "ucuz apply()" öngörüsünü
+        // geçersiz kılıyordu.
         Context rhinoContext = enterSafeContext();
         try {
             rhinoContext.setOptimizationLevel(-1);
@@ -139,9 +151,10 @@ public class RuleParserService {
                 }
             }
 
-            // Kuralın sözdizimini burada, en başta kontrol ediyoruz.
+            // Kuralın sözdizimini burada, en başta kontrol ediyoruz ve derlenmiş
+            // fonksiyonu daha sonra tekrar tekrar kullanmak üzere saklıyoruz.
             // Eğer "a +* b" gibi bir hata varsa, Exception burada fırlatılacak.
-            rhinoContext.compileFunction(mainScope, functionWrapper, "rule", 1, null);
+            compiledFunction = rhinoContext.compileFunction(mainScope, functionWrapper, "rule", 1, null);
 
         } catch (InvalidRuleException e) {
             throw e;
@@ -154,11 +167,10 @@ public class RuleParserService {
         return (a, b) -> {
             Context executionContext = enterSafeContext();
             try {
-                // Her çalıştırmada, daha önce oluşturduğumuz ve sabitleri içeren scope'u kullanıyoruz.
-                // Ve fonksiyonu yeniden derleyip çalıştırıyoruz.
-                Function jsFunction = executionContext.compileFunction(mainScope, functionWrapper, "rule", 1, null);
-
-                Object result = jsFunction.call(executionContext, mainScope, mainScope, new Object[]{a, b});
+                // Her çalıştırmada, daha önce (bir kez) derlediğimiz fonksiyonu ve
+                // sabitleri içeren scope'u yeniden kullanıyoruz; sadece bu thread
+                // için yeni bir Context açıyoruz, fonksiyonu yeniden derlemiyoruz.
+                Object result = compiledFunction.call(executionContext, mainScope, mainScope, new Object[]{a, b});
                 Set<Integer> resultSet = new HashSet<>();
 
                 if (result instanceof Number) {
