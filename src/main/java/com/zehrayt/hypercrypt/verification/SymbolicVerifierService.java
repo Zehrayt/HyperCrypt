@@ -43,13 +43,13 @@ public class SymbolicVerifierService {
         }
 
         try {
-            // Önce birleşme aksiyomunu test et
+            // DÜZELTME (Hakem 2 uyarısı): Birleşme (associativity) ve üretim (reproduction)
+            // aksiyomları birbirinden BAĞIMSIZ aksiyomlardır. Genel bir hipergrupoid,
+            // birleşmeli olmadan da üretim aksiyomunu sağlayabilir (ve tam tersi). Bu yüzden
+            // üretim aksiyomu artık birleşme sonucuna göre KOŞULLU çalıştırılmıyor; her ikisi
+            // de her zaman ayrı ayrı test edilir ve sonuçları en sonda birleştirilir.
             this.verifyAssociativity(rule, domain, result);
-
-            // Eğer birleşme geçtiyse üretim aksiyomunu da deneyelim
-            if (result.isSemihypergroup()) {
-                this.verifyGenerationAxiom(rule, domain, result);
-            }
+            this.verifyGenerationAxiom(rule, domain, result);
 
             // Son olarak hypergroup durumu belirle
             boolean isHypergroup = result.isSemihypergroup() && result.isQuasihypergroup();
@@ -60,6 +60,12 @@ public class SymbolicVerifierService {
                 result.setFailingAxiom(null);
             } else if (result.isSemihypergroup()) {
                 result.setHighestStructure("Yarı Hipergrup (Semihypergroup)");
+                result.setFailingAxiom("Üretim Aksiyomu (Reproduction)");
+            } else if (result.isQuasihypergroup()) {
+                // Birleşmeli değil ama üretim aksiyomunu sağlıyor: bu da geçerli, ayrı bir
+                // sınıflandırmadır ve artık (düzeltme sayesinde) doğru şekilde tespit edilebiliyor.
+                result.setHighestStructure("Quasihypergrup (Symbolic) - Birleşmeli Değil");
+                result.setFailingAxiom("Birleşme Özelliği (Associativity)");
             } else if (result.getFailingAxiom() != null) {
                 result.setHighestStructure("Hipergrupoid (Symbolic)");
             }
@@ -108,8 +114,10 @@ public class SymbolicVerifierService {
                 result.setHighestStructure("Hypergroupoid (Symbolic)");
             }
 
-            result.setQuasihypergroup(false);
-            result.setHypergroup(false);
+            // DÜZELTME (Hakem 2 uyarısı): Burada ARTIK isQuasihypergroup/isHypergroup
+            // false olarak zorlanmıyor. Bu iki alan, kendi bağımsız testi olan
+            // verifyGenerationAxiom tarafından belirlenecek; birleşme testinin
+            // sonucu üretim aksiyomunun sonucunu OLUMSUZ ETKİLEMEMELİDİR.
 
         } catch (Exception e) {
             log.error("Associativity analysis failed for rule '{}'", rule, e);
@@ -130,6 +138,12 @@ public class SymbolicVerifierService {
      * SAĞLAMAZ, çünkü b'nin katsayısı (3) Z'de bir birim (unit) değildir: a sabit
      * iken 2a+3b'nin görüntü kümesi 2a+3Z'dir ve bu Z'ye eşit değildir. Q üzerinde
      * ise katsayının sıfırdan farklı olması (bölme mümkün olduğu için) yeterlidir.
+     *
+     * ÖNEMLİ (Hakem 2 uyarısı üzerine ikinci düzeltme): Bu metot artık, çağıran
+     * verifySymbolically metodunda, birleşme aksiyomunun sonucundan BAĞIMSIZ olarak
+     * her zaman çalıştırılır. Üretim (reproduction) ve birleşme (associativity)
+     * mantıksal olarak birbirinden bağımsız iki aksiyomdur; bir hipergrupoid
+     * birleşmeli olmadan da üretim aksiyomunu sağlayabilir.
      *
      * Algoritma: rulePoly'nin terimleri (ExpVector bazında) tek tek gezilir.
      *  - SAĞ üretim (b'ye göre): b'nin üssü >= 2 olan herhangi bir terim varsa
