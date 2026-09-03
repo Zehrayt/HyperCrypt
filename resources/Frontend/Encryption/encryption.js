@@ -185,6 +185,58 @@ document.addEventListener("DOMContentLoaded", () => {
     customEncryptedPreview.textContent = encryptedPreview.trim();
   }
 
+  // GERÇEK ÇÖZÜMLEME (Custom Map Mod - Döngüsel Zincir)
+  //
+  // Şifreleme sırasında her token, encrypted_i = rule(value_i, value_{i+1})
+  // olarak üretilir (value_i = zincirdeki i. harfin keyMappings değeri).
+  // Alıcı tarafında bu zinciri geriye çözmek için, zincirin İLK değerinin
+  // (value_0) bilindiği varsayılır -- tıpkı bir blok şifredeki paylaşılan bir
+  // "IV" (initialization vector) gibi, bu tek değer Alice ve Bob arasında ayrıca
+  // (güvenli bir kanaldan) paylaşılmış kabul edilir. Bu bilinen değerden
+  // başlayarak, keyMappings'in küçük değer evreninde (tipik olarak <=27 aday)
+  // her adım için "rule(value_i, aday) === encrypted_i" koşulunu sağlayan aday
+  // taranarak value_{i+1} bulunur ve zincir ileri yönde çözülür.
+  //
+  // Kuralın ikinci argümanında birebir (enjektif) olmadığı durumlarda bir
+  // adımda birden fazla aday bulunabilir; bu durum GİZLENMEZ, sonuçta
+  // "ambiguous" olarak işaretlenir ve arayüzde açıkça raporlanır. Zincirin son
+  // halkası, döngüsel olarak ilk değere geri kapanmalıdır (value_L === value_0);
+  // kapanmazsa şifre çözme "chain-does-not-close" olarak başarısız sayılır.
+  function decryptCustomChain(cipherValues, ruleStr, domainValues, knownFirstValue) {
+    if (knownFirstValue === null || knownFirstValue === undefined) {
+      return { ok: false, reason: "no-known-first-value" };
+    }
+    let func;
+    try {
+      func = new Function("a", "b", "return " + ruleStr);
+    } catch (e) {
+      return { ok: false, reason: "rule-parse-error" };
+    }
+    const values = [knownFirstValue];
+    let ambiguous = false;
+    for (let i = 0; i < cipherValues.length; i++) {
+      const candidates = [];
+      for (const cand of domainValues) {
+        try {
+          if (func(values[i], cand) === cipherValues[i]) candidates.push(cand);
+        } catch (e) {
+          /* bu aday kuralı hata verdirdiyse atla */
+        }
+      }
+      if (candidates.length === 0) {
+        return { ok: false, reason: "no-consistent-value", step: i };
+      }
+      if (candidates.length > 1) ambiguous = true;
+      const next = candidates[0];
+      if (i < cipherValues.length - 1) {
+        values.push(next);
+      } else if (next !== values[0]) {
+        return { ok: false, reason: "chain-does-not-close", step: i };
+      }
+    }
+    return { ok: true, values, ambiguous };
+  }
+
   // Binary Mod: Önizlemeyi güncelleme
   function updateBinaryPreview() {
     const message = binaryMessageInput.value;
@@ -273,14 +325,92 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    lastCustomResult = { originalMessage, encryptedMessage, rule };
+    // GERÇEK ÇÖZÜMLEME: zincirdeki sayısal token'ları ve harfe geçmeyen
+    // (literal) token'ları ayır, bilinen ilk değerden (Alice'in gönderdiği
+    // ilk geçerli harfin keyMappings değeri -- IV benzeri paylaşılan tohum)
+    // başlayarak zinciri gerçekten decryptCustomChain ile çöz.
+    const upperOriginal = originalMessage.toUpperCase();
+    const firstValidChar = [...upperOriginal].find(
+      (c) => keyMappings[c] !== undefined,
+    );
+    const knownFirstValue =
+      firstValidChar !== undefined ? keyMappings[firstValidChar] : null;
+
+    const tokens = encryptedMessage.split(" ").filter((tok) => tok !== "");
+    const cipherValues = [];
+    const tokenIsNumeric = [];
+    for (const tok of tokens) {
+      if (!isNaN(tok)) {
+        cipherValues.push(Number(tok));
+        tokenIsNumeric.push(true);
+      } else {
+        tokenIsNumeric.push(false);
+      }
+    }
+    const domainValues = [...new Set(Object.values(keyMappings))];
+    const decryptResult = decryptCustomChain(
+      cipherValues,
+      rule,
+      domainValues,
+      knownFirstValue,
+    );
+
+    let reconstructedMessage = null;
+    let ambiguous = false;
+    if (decryptResult.ok) {
+      ambiguous = decryptResult.ambiguous;
+      const valueToChar = {};
+      for (const [c, v] of Object.entries(keyMappings)) {
+        if (!(v in valueToChar)) valueToChar[v] = c; // birden fazla harf aynı değeri paylaşırsa ilkini kullan (belirsizlik notuyla)
+      }
+      let vi = 0;
+      const chars = tokenIsNumeric.map((isNum) =>
+        isNum ? valueToChar[decryptResult.values[vi++]] : null,
+      );
+      let ti = 0;
+      reconstructedMessage = tokens
+        .map((tok, idx) => (tokenIsNumeric[idx] ? chars[idx] : tok))
+        .join(" ");
+    }
+
+    lastCustomResult = {
+      originalMessage,
+      encryptedMessage,
+      rule,
+      knownFirstValue,
+      decryptResult,
+      reconstructedMessage,
+      ambiguous,
+    };
     renderCustomLog();
     alert(t("enc.successAlert", "Mesaj başarıyla şifrelendi ve gönderildi!"));
   });
 
   function renderCustomLog() {
     if (!lastCustomResult) return;
-    const { originalMessage, encryptedMessage, rule } = lastCustomResult;
+    const {
+      originalMessage,
+      encryptedMessage,
+      rule,
+      decryptResult,
+      reconstructedMessage,
+      ambiguous,
+    } = lastCustomResult;
+
+    let decryptionLine;
+    if (decryptResult && decryptResult.ok) {
+      const suffix = ambiguous
+        ? ` ${t("enc.decryptAmbiguousNote", "(UYARI: kural bu adımlardan en az birinde birebir/enjektif değil -- birden fazla aday değer aynı şifreli sonucu verdiği için gösterilen çözüm zincirin BİRÇOK olası çözümünden biridir, tek olduğu garanti edilmez.)")}`
+        : "";
+      decryptionLine = `${t("enc.decryptedResultLabel", "Çözülen Mesaj:")} <strong>${reconstructedMessage}</strong>${suffix}`;
+    } else {
+      const reason = decryptResult ? decryptResult.reason : "unknown";
+      decryptionLine = t(
+        "enc.decryptFailedNote",
+        "Bu kural ve anahtar haritasıyla zincir tutarlı biçimde çözülemedi (sebep: {reason}). Bu, ilgili kuralın bu döngüsel zincirleme için tersine çevrilebilir olmadığını gösterir.",
+      ).replace("{reason}", reason);
+    }
+
     customCommunicationLog.innerHTML = `
       <div>
         <span class="step-label">${t("enc.sentMessageLabel", "Gönderilen Mesaj (Orijinal):")}</span>
@@ -293,9 +423,8 @@ document.addEventListener("DOMContentLoaded", () => {
       <div>
         <span class="step-label">${t("enc.decryptionLabel", "Alıcı Tarafında Çözümleme (Decryption):")}</span>
         <span class="message-content">${t("enc.chainExplain1", 'Bu mesaj <strong>"Döngüsel Zincirleme"</strong> yöntemiyle şifrelenmiştir. Her harf bir sonrakine cebirsel olarak bağlıdır (Örn: a ο b).')}</span>
-        <span class="message-content">${t("enc.chainExplain2", "Alıcı, hiperyapı kurallarını ve matris çözümlemesini (veya bilinen ilk harfi) kullanarak zinciri geriye doğru çözer.")}</span>
-        <span class="message-content">${t("enc.chainExplain3", "Mesaj alıcıya ulaştı ve '{rule}' kuralı ve bilinen anahtar haritalarıyla çözümlenecek.").replace("{rule}", rule)}</span>
-        <span class="message-content">${t("enc.decryptedResultLabel", "Çözülen Mesaj:")} <strong>${originalMessage}</strong> ${t("enc.simulationNote", "(Basit simülasyon)")}</span>
+        <span class="message-content">${t("enc.chainExplain2b", "Alıcı, kuralı ve paylaşılan anahtar haritasını (keyMappings) bilir; zincirin ilk değerini (Alice'in gönderdiği ilk harfe karşılık gelen, ayrıca paylaşılmış bir başlangıç değeri -- bir bakıma bir 'IV') kullanarak zinciri GERÇEKTEN ileri yönde çözer.")}</span>
+        <span class="message-content">${decryptionLine}</span>
       </div>
     `;
   }
@@ -326,20 +455,49 @@ document.addEventListener("DOMContentLoaded", () => {
       ? previewContent.textContent
       : "";
 
-    // İşlenmiş binary'yi tekrar metne çevirme (basit bir simülasyon için)
+    // GERÇEK ÇÖZÜMLEME: alıcı, şifreli bitlere AYNI bit-kuralını yeniden
+    // uygular. Bu, kuralın kendi kendinin tersi (bir involution) olduğu
+    // durumlarda -- örn. varsayılan "bit ^ 1" kuralı -- orijinal mesajı
+    // matematiksel olarak doğru biçimde geri verir (involution ^ involution =
+    // özdeşlik). Kural involutif DEĞİLSE (örn. sabit "0" döndüren bir kural),
+    // bu ikinci uygulama orijinali geri getirmez; bu durum gizlenmeden,
+    // yeniden hesaplanan sonucun orijinal mesajla eşleşip eşleşmediği
+    // karşılaştırılarak arayüzde açıkça raporlanır.
+    let reDecryptedBinary = "";
+    for (let i = 0; i < processedBinaryMessage.length; i++) {
+      const ch = processedBinaryMessage[i];
+      if (ch === " ") {
+        reDecryptedBinary += " ";
+        continue;
+      }
+      const bit = parseInt(ch);
+      let recoveredBit = bit;
+      try {
+        const func = new Function("bit", "return " + rule);
+        recoveredBit = func(bit);
+        recoveredBit =
+          recoveredBit === 0 || recoveredBit === 1 ? recoveredBit : bit ^ 1;
+      } catch (e) {
+        recoveredBit = bit ^ 1;
+      }
+      reDecryptedBinary += recoveredBit;
+    }
+
     let decryptedMessage = "";
-    const binaryBlocks = processedBinaryMessage
+    const binaryBlocks = reDecryptedBinary
       .split(" ")
       .filter((block) => block.length === 8);
     for (const block of binaryBlocks) {
       const charCode = parseInt(block, 2);
       decryptedMessage += String.fromCharCode(charCode);
     }
+    const isInvolution = decryptedMessage === originalMessage;
 
     lastBinaryResult = {
       originalMessage,
       processedBinaryMessage,
       decryptedMessage,
+      isInvolution,
     };
     renderBinaryLog();
     alert(t("enc.successAlert", "Mesaj başarıyla şifrelendi ve gönderildi!"));
@@ -347,8 +505,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function renderBinaryLog() {
     if (!lastBinaryResult) return;
-    const { originalMessage, processedBinaryMessage, decryptedMessage } =
-      lastBinaryResult;
+    const {
+      originalMessage,
+      processedBinaryMessage,
+      decryptedMessage,
+      isInvolution,
+    } = lastBinaryResult;
+    const involutionNote = isInvolution
+      ? ""
+      : ` ${t("enc.binaryNotInvolutionNote", "(UYARI: bu kural kendi kendinin tersi -- involution -- değil; kuralın aynısını şifreli bitlere yeniden uygulamak orijinal mesajı geri vermedi. Gerçek bir çözümleme için bu kuralın matematiksel tersi ayrıca tanımlanmalıdır.)")}`;
     binaryCommunicationLog.innerHTML = `
       <div>
         <span class="step-label">${t("enc.sentTextMessageLabel", "Gönderilen Mesaj (Orijinal Metin):")}</span>
@@ -360,8 +525,8 @@ document.addEventListener("DOMContentLoaded", () => {
       </div>
       <div>
         <span class="step-label">${t("enc.recipientDecryptionLabel", "Alıcı Tarafında Çözümleme:")}</span>
-        <span class="message-content">${t("enc.binaryDecryptExplain", "Mesaj alıcıya ulaştı ve kuralın tersi veya bilinen anahtarlarla çözümlenecek.")}</span>
-        <span class="message-content">${t("enc.decryptedTextLabel", "Çözülen Mesaj (Metin):")} <strong>${decryptedMessage}</strong></span>
+        <span class="message-content">${t("enc.binaryDecryptExplain2", "Alıcı, AYNI bit-kuralını şifreli bitlere yeniden uygulayarak çözümler (kural involutif ise -- örn. varsayılan XOR 1 -- bu matematiksel olarak orijinali geri verir).")}</span>
+        <span class="message-content">${t("enc.decryptedTextLabel", "Çözülen Mesaj (Metin):")} <strong>${decryptedMessage}</strong>${involutionNote}</span>
       </div>
     `;
   }

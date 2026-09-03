@@ -7,7 +7,6 @@
   "header.navHyperring": "<a href=\"../Hiperhalkalar/hiperhalka.html\">What are Hyperrings?</a>",
   "header.navFunction": "<a href=\"../Fonksiyon/func.html\">Function</a>",
   "header.navAbout": "<a href=\"../Anasayfa/index.html#hakkimizda\">About Us</a>",
-
   "_comment1": "------------ FOOTER ------------",
   "footer.projectSummaryTitle": "Project Summary",
   "footer.projectSummaryText": "\n        This project aims to algorithmically model multiplicative\n        hyperrings. It offers a way to experience mathematical\n        structures in a computer environment.\n      ",
@@ -21,7 +20,6 @@
   "footer.thanksTitle": "Acknowledgements",
   "footer.thanksText": "\n        We would like to thank our project advisor <strong>Dr. Elif Özel Ay</strong>\n        and <strong>TÜBİTAK</strong> for their support.\n      ",
   "footer.copyright": "© 2025 Algorithmic Modeling of Multiplicative Hyperrings",
-
   "_comment2": "------------ ANASAYFA ------------",
   "home.pageTitle": "Modeling of Hyperrings",
   "home.heroTitle": "Algorithmic Modeling of Multiplicative Hyperrings",
@@ -53,7 +51,6 @@
   "home.card3Name": "Dr. Elif Özel Ay",
   "home.role3": "Project Advisor",
   "home.desc3": "As our project's advisor, she provides academic and technical guidance. She has supported the team in building the project's mathematical foundation and understanding the subject conceptually.",
-
   "_comment3": "------------ HİPERHALKALAR ------------",
   "hyperring.pageTitle": "What is a Hyperring?",
   "hyperring.whatTitle": "What are Hyperrings?",
@@ -69,7 +66,6 @@
   "hyperring.cryptoText3": "\n        When integrated into key-exchange protocols such as Diffie-Hellman,\n        hyperring structures create an additional layer of security against\n        guess-based and man-in-the-middle attacks. These structures also\n        provide flexibility in protocols such as VPN and SSL through dynamic\n        key generation.\n      ",
   "hyperring.cryptoText4": "\n        Beyond encryption, hyperring-based methods can also be used in data\n        integrity protection and digital signature generation. This ensures\n        both the confidentiality of data and whether it has been tampered\n        with. The algebraic complexity offered by hyperring structures makes\n        encryption systems harder to break.\n      ",
   "hyperring.cryptoText5": "\n        In conclusion, hyperring structures stand out in cryptography as a\n        tool that both increases security and adds flexibility to a system.\n        Thanks to their key diversity, non-linear transformations, dynamic\n        generation, and data-integrity verification features,\n        hyperring-based systems provide a significant advantage in modern\n        security protocols.\n      ",
-
   "_comment4": "------------ FONKSİYON ------------",
   "func.pageTitle": "Function",
   "func.usageTitle": "Using the Function",
@@ -99,18 +95,19 @@
   "func.tabFinite2": "Finite 2",
   "func.tabFinite3": "Finite 3",
   "func.tabInfinite1": "Infinite 1",
-
   "_comment4-1": "--- Examples tab ---",
   "func.setLabel": "Set:",
   "func.rulesLabelShort": "Rules:",
   "func.resultColLabel": "Result",
   "func.rationalNumbersDesc": "Rational numbers",
-
   "_comment4-2": "--- The result screen that appears after showResults ---",
   "func.cayleyTableTitle": "Operation Table (Cayley Table)",
   "func.analysisResultTitle": "Analysis Result",
   "func.highestStructureLabel": "Highest Structure:",
   "func.undetermined": "Undetermined",
+  "func.pillTrue": "Yes",
+  "func.pillFalse": "No",
+  "func.pillNotEvaluated": "Not evaluated",
   "func.multPropertiesTitle": "Multiplicative Structure Properties (*)",
   "func.semihypergroupLabel": "Semihypergroup (Associativity)",
   "func.quasihypergroupLabel": "Quasihypergroup (Reproduction)",
@@ -121,7 +118,6 @@
   "func.unknownError": "An unknown error occurred.",
   "func.invalidFiniteSetAlert": "Please enter a valid finite set.",
   "func.apiConnectionError": "An error occurred while connecting to the API: ",
-
   "_comment5": "------------ ENCRYPTION PAGE ------------",
   "enc.heading": "Hyper Encryption Module",
   "enc.modeCustomLabel": "Custom Map Mode",
@@ -156,7 +152,6 @@
   "enc.infoExampleBinary": "<strong>Binary:</strong> bit ^ 1 (XOR), bit & 0 (AND), bit | 1 (OR)",
   "enc.helpTitle": "Help",
   "enc.homeTitle": "Back to Home",
-
   "_comment5-1": "---  Dynamic texts in encryption.js ---",
   "enc.originalBinaryLabel": "Original Binary:",
   "enc.processedBinaryLabel": "Rule-Applied Binary:",
@@ -177,8 +172,6 @@
   "enc.recipientDecryptionLabel": "Decryption (Recipient Side):",
   "enc.binaryDecryptExplain": "The message has reached the recipient and will be decrypted using the inverse of the rule or known keys.",
   "enc.decryptedTextLabel": "Decrypted Message (Text):",
-
-
   "_comment6": "------------ CRYPTO PAGE ------------",
   "mitm.pageTitle": "Hyper-DH & MITM (Eve) Simulator",
   "mitm.heading": "Hyper-DH & Man-In-The-Middle Simulator",
@@ -230,7 +223,6 @@
   "mitm.infoTechRule": "<strong>Rule:</strong> Defines the hyperring operation (e.g.: Math.pow(a, b) % n)",
   "mitm.helpTitle": "Help",
   "mitm.homeTitle": "Back to Home",
-
   "mitm.nodeLabel": "Node",
   "mitm.privateShortLabel": "Private",
   "mitm.publicShortLabel": "Public",
@@ -279,5 +271,4 @@
   "mitm.onStateWord": "ON",
   "mitm.offStateWord": "OFF",
   "mitm.hyperHelpAlert": "Hyper-DH ON: Public keys and shared secrets are computed using the rule and the set (p,g).\n\nHyper-DH OFF: Key calculation/exchange is skipped; the message is sent directly. If Eve (MITM) is active, she still intercepts/modifies packets. (Rule/Mod/Gen inputs are disabled and ignored.)"
-
 }

@@ -6,8 +6,7 @@
   "header.navHome": "<a href=\"../Anasayfa/index.html\">Anasayfa</a>",
   "header.navHyperring": "<a href=\"../Hiperhalkalar/hiperhalka.html\">Hiperhalkalar Nedir?</a>",
   "header.navFunction": "<a href=\"../Fonksiyon/func.html\">Fonksiyon</a>",
-  "header.navAbout": "<a href=\"../Anasayfa/index.html#hakkimizda\">Hakkımızda</a>", 
-
+  "header.navAbout": "<a href=\"../Anasayfa/index.html#hakkimizda\">Hakkımızda</a>",
   "_comment1": "------------ FOOTER ------------",
   "footer.projectSummaryTitle": "Proje Özeti",
   "footer.projectSummaryText": "\n        Bu proje, çarpımsal hiperhalkaların algoritmik modellenmesini\n        amaçlamaktadır. Matematiksel yapıları bilgisayar ortamında\n        deneyimleme imkanı sunar.\n      ",
@@ -21,7 +20,6 @@
   "footer.thanksTitle": "Teşekkürler",
   "footer.thanksText": "\n        Projemizin danışmanı <strong>Dr. Öğretim Üyesi Elif Özel Ay</strong>’a\n        ve <strong>TÜBİTAK</strong>’a desteklerinden dolayı teşekkür ederiz.\n      ",
   "footer.copyright": "© 2025 Çarpımsal Hiperhalkaların Algoritmik Modellemesi",
-
   "_comment2": "------------ ANASAYFA ------------",
   "home.pageTitle": "Hiperhalkaların Modellemesi",
   "home.heroTitle": "Çarpımsal Hiperhalkaların Algoritmik Modellemesi",
@@ -53,7 +51,6 @@
   "home.card3Name": "Dr. Öğretim Üyesi Elif Özel Ay",
   "home.role3": "Proje Danışmanı",
   "home.desc3": "Projemizin danışmanı olarak akademik ve teknik rehberlik sağlamaktadır. Projenin matematiksel altyapısının oluşturulması ve konunun kavramsal olarak anlaşılmasında ekibe destek olmuştur.",
-
   "_comment3": "------------ HİPERHALKA ------------",
   "hyperring.pageTitle": "Hiperhalkalar Nedir?",
   "hyperring.whatTitle": "Hiperhalkalar Nedir?",
@@ -69,7 +66,6 @@
   "hyperring.cryptoText3": "\n        Hiperhalka yapıları, Diffie-Hellman gibi anahtar değişim\n        protokollerine entegre edildiğinde tahmin tabanlı ve man-in-the-middle\n        saldırılarına karşı ek güvenlik katmanı oluşturur. Bu yapılar aynı\n        zamanda dinamik anahtar üretimi sayesinde VPN ve SSL gibi\n        protokollerde esneklik sağlar.\n      ",
   "hyperring.cryptoText4": "\n        Şifreleme dışında, veri bütünlüğünü koruma ve sayısal imza üretme\n        süreçlerinde de hiperhalka tabanlı yöntemler kullanılabilir. Böylece\n        hem verilerin gizliliği hem de değiştirilip değiştirilmediği güvence\n        altına alınır. Hiperhalka yapılarının sunduğu bu cebirsel karmaşıklık,\n        şifreleme sistemlerinin çözülmesini zorlaştırır.\n      ",
   "hyperring.cryptoText5": "\n        Sonuç olarak, hiperhalka yapıları kriptografide hem güvenliği artıran\n        hem de sisteme esneklik katan bir araç olarak öne çıkar. Anahtar\n        çeşitliliği, non-lineer dönüşümler, dinamik üretim ve veri bütünlüğü\n        doğrulama özellikleri sayesinde, hiperhalka tabanlı sistemler modern\n        güvenlik protokollerinde önemli bir avantaj sağlar.\n      ",
-
   "_comment4": "------------ FONKSİYON ------------",
   "func.pageTitle": "Fonksiyon",
   "func.usageTitle": "Fonksiyon Kullanımı",
@@ -99,18 +95,19 @@
   "func.tabFinite2": "Sonlu 2",
   "func.tabFinite3": "Sonlu 3",
   "func.tabInfinite1": "Sonsuz 1",
-
   "_comment4-1": "--- Örnekler tabı ---",
   "func.setLabel": "Küme:",
   "func.rulesLabelShort": "Kurallar:",
   "func.resultColLabel": "Sonuç",
   "func.rationalNumbersDesc": "Rasyonel sayılar",
-
   "_comment4-2": "--- showResults sonrası çıkan sonuç ekranı ---",
   "func.cayleyTableTitle": "İşlem Tablosu (Cayley Table)",
   "func.analysisResultTitle": "Analiz Sonucu",
   "func.highestStructureLabel": "En Yüksek Yapı:",
   "func.undetermined": "Belirlenemedi",
+  "func.pillTrue": "Evet",
+  "func.pillFalse": "Hayır",
+  "func.pillNotEvaluated": "Değerlendirilmedi",
   "func.multPropertiesTitle": "Çarpımsal Yapı Özellikleri (*)",
   "func.semihypergroupLabel": "Yarı Hipergrup (Birleşme)",
   "func.quasihypergroupLabel": "Kuazi Hipergrup (Üretim)",
@@ -121,7 +118,6 @@
   "func.unknownError": "Bilinmeyen bir hata oluştu.",
   "func.invalidFiniteSetAlert": "Lütfen geçerli bir sonlu küme girin.",
   "func.apiConnectionError": "API'ye bağlanırken bir hata oluştu: ",
-
   "_comment5": "------------ ENCRYPTION SAYFASI ------------",
   "enc.heading": "Hiper Şifreleme Modülü",
   "enc.modeCustomLabel": "Custom Map Mod",
@@ -156,7 +152,6 @@
   "enc.infoExampleBinary": "<strong>Binary:</strong> bit ^ 1 (XOR), bit & 0 (AND), bit | 1 (OR)",
   "enc.helpTitle": "Yardım",
   "enc.homeTitle": "Ana Sayfaya Dön",
-
   "_comment5-1": "---  encryption.js' teki dinamik metinler ---",
   "enc.originalBinaryLabel": "Orijinal Binary:",
   "enc.processedBinaryLabel": "Kural Uygulanmış Binary:",
@@ -177,7 +172,6 @@
   "enc.recipientDecryptionLabel": "Alıcı Tarafında Çözümleme:",
   "enc.binaryDecryptExplain": "Mesaj alıcıya ulaştı ve kuralın tersi veya bilinen anahtarlarla çözümlenecek.",
   "enc.decryptedTextLabel": "Çözülen Mesaj (Metin):",
-
   "_comment6": "------------ CRYPTO SAYFASI ------------",
   "mitm.pageTitle": "Hiper-DH & MITM (Eve) Simülatörü",
   "mitm.heading": "Hiper-DH & Man-In-The-Middle Simülatörü",
@@ -229,7 +223,6 @@
   "mitm.infoTechRule": "<strong>Kural:</strong> Hiperhalka işlemi tanımlar (örn: Math.pow(a, b) % n)",
   "mitm.helpTitle": "Yardım",
   "mitm.homeTitle": "Ana Sayfaya Dön",
-
   "mitm.nodeLabel": "Düğüm",
   "mitm.privateShortLabel": "Gizli",
   "mitm.publicShortLabel": "Genel",
@@ -278,6 +271,4 @@
   "mitm.onStateWord": "AÇIK",
   "mitm.offStateWord": "KAPALI",
   "mitm.hyperHelpAlert": "Hiper-DH ON: Kural ve küme (p,g) kullanılarak genel anahtarlar ve ortak sırlar hesaplanır.\n\nHiper-DH OFF: Anahtar hesaplama/devreye alma atlanır; ileti doğrudan gönderilir. Eve (MITM) aktifse paketleri yakalamaya/degistirmeye devam eder. (Rule/Mod/Gen girişleri kapatılır ve yok sayılır.)"
-
-
 }
