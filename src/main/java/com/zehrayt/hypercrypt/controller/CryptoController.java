@@ -33,6 +33,21 @@ public class CryptoController {
 
     @PostMapping("/calculate-key") // Hem Public Key hem de Shared Secret'ı hesaplayacak
     public ResponseEntity<KeyExchangeResult> calculateKey(@RequestBody KeyExchangeRequest request) {
+        // GİRDİ DOĞRULAMASI: 'generator', 'privateKey' ve 'modulus' alanları Integer
+        // (null olabilir) olduğundan, aşağıda doğrudan int'e unboxing ile çevriliyorlar.
+        // Bu alanlardan biri eksik bırakılırsa unboxing bir NullPointerException fırlatır
+        // ve bu, aşağıdaki genel catch(Exception) bloğuna düşerek yanıltıcı bir "sunucuda
+        // beklenmedik hata" (500) yanıtına yol açardı; oysa bu net bir eksik-alan (400)
+        // durumudur. eveAttack() endpoint'indeki doğrulamayla tutarlı olacak şekilde,
+        // eksik alanları burada açıkça 400 Bad Request ile reddediyoruz. 'theirPublicKey'
+        // isteğe bağlıdır (null olması, genel anahtar mı yoksa ortak sır mı hesaplanacağını
+        // belirler) ve bu yüzden burada kontrol edilmez.
+        if (request.rule == null || request.generator == null || request.privateKey == null
+                || request.modulus == null) {
+            return ResponseEntity.badRequest().body(new KeyExchangeResult(null,
+                "Hata: 'rule', 'generator', 'privateKey' ve 'modulus' alanları gereklidir."));
+        }
+
         try {
             // Hangi işlemi yapacağımıza karar veriyoruz.
             // Eğer karşıdan gelen anahtar null ise, genel anahtarı hesaplıyoruz.
