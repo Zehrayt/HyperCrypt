@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.context.MessageSource;
 
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -29,6 +30,7 @@ public class VerificationController {
     private final RuleParserService ruleParserService;
     private final SymbolicVerifierService symbolicVerifierService;
     private final RuleSuggestionEngine ruleSuggestionEngine;
+    private final MessageSource messageSource;
 
     private static final String NO_SUGGESTION_FOUND_MESSAGE =
         "Bu kural için otomatik olarak doğrulanmış bir düzeltme önerisi bulunamadı.";
@@ -36,10 +38,12 @@ public class VerificationController {
     @Autowired
     public VerificationController(RuleParserService ruleParserService,
                                 SymbolicVerifierService symbolicVerifierService,
-                                RuleSuggestionEngine ruleSuggestionEngine) {
+                                RuleSuggestionEngine ruleSuggestionEngine,
+                            MessageSource messageSource) {
         this.ruleParserService = ruleParserService;
         this.symbolicVerifierService = symbolicVerifierService;
         this.ruleSuggestionEngine = ruleSuggestionEngine;
+        this.messageSource = messageSource;
     }
 
     private String formatVerifiedSuggestions(List<RuleSuggestionEngine.Suggestion> verified) {
@@ -109,7 +113,7 @@ public class VerificationController {
                 // 4. Adım: Aksiyom motorunu bu fonksiyonla çalıştır
                 // (verifyAll() artık içeride (R,+) abelyen grup aksiyomunu da gerçekten
                 // doğruluyor; bkz. AxiomVerifier.verifyAdditiveGroupAxioms())
-                AxiomVerifier verifier = new AxiomVerifier(request.baseSet, operation);
+                AxiomVerifier verifier = new AxiomVerifier(request.baseSet, operation, messageSource);
                 VerificationResult result = verifier.verifyAll();
 
                 Map<String, Map<String, String>> tableData = new LinkedHashMap<>();

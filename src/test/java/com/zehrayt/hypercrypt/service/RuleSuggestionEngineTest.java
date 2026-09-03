@@ -1,11 +1,16 @@
 package com.zehrayt.hypercrypt.service;
 
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
+import org.springframework.context.support.ResourceBundleMessageSource;
 
 import java.time.Duration;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -13,13 +18,25 @@ import static org.junit.jupiter.api.Assertions.*;
 class RuleSuggestionEngineTest {
 
     private RuleSuggestionEngine engine;
+    private MessageSource messageSource;
 
     @BeforeEach
     void setUp() {
+        LocaleContextHolder.setLocale(Locale.forLanguageTag("tr"));
+
+        ResourceBundleMessageSource ms = new ResourceBundleMessageSource();
+        ms.setBasename("messages");
+        ms.setDefaultEncoding("UTF-8");
+        this.messageSource = ms;
         // Gerçek SuggestionModelScorer kullanılıyor: model classpath'te bulunursa önceliklendirme aktif olur,
         // bulunamazsa nötr skorla (üretim sırasıyla) aynı doğru sonuca ulaşılmalı.
         // iki durumda da AxiomVerifier garantisi geçerli.
-        engine = new RuleSuggestionEngine(new RuleParserService(), new SuggestionModelScorer());
+        engine = new RuleSuggestionEngine(new RuleParserService(), new SuggestionModelScorer(), messageSource);
+    }
+
+    @AfterEach
+    void tearDown() {
+        LocaleContextHolder.resetLocaleContext();
     }
 
     @Test
@@ -38,7 +55,7 @@ class RuleSuggestionEngineTest {
         // yeniden çalıştırıp gerçekten hipergrup olduğunu teyit ediyoruz.
         for (RuleSuggestionEngine.Suggestion s : suggestions) {
             var operation = new RuleParserService().parseRule(s.rule, java.util.Map.of("n", z3.size()));
-            var result = new com.zehrayt.hypercrypt.verification.AxiomVerifier(z3, operation).verifyAll();
+            var result = new com.zehrayt.hypercrypt.verification.AxiomVerifier(z3, operation, messageSource).verifyAll();
             assertTrue(result.isHypergroup(), "Önerilen kural (" + s.rule + ") gerçekten hipergrup olmalı.");
         }
     }
@@ -86,7 +103,7 @@ class RuleSuggestionEngineTest {
         // sırasına düşmeli ve doğru öneriyi yine bulmalı.
         // AxiomVerifier garantisi modelden bağımsızdır.
         RuleSuggestionEngine engineWithoutModel =
-            new RuleSuggestionEngine(new RuleParserService(), new AlwaysUnavailableScorer());
+            new RuleSuggestionEngine(new RuleParserService(), new AlwaysUnavailableScorer(), messageSource);
         Set<Integer> z3 = Set.of(0, 1, 2);
 
         List<RuleSuggestionEngine.Suggestion> suggestions = engineWithoutModel.suggest("(a*b)%n", z3);

@@ -5,6 +5,7 @@ import com.zehrayt.hypercrypt.verification.AxiomVerifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.context.MessageSource;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -36,10 +37,12 @@ public class RuleSuggestionEngine {
 
     private final RuleParserService ruleParserService;
     private final SuggestionModelScorer modelScorer;
+    private final MessageSource messageSource;
 
-    public RuleSuggestionEngine(RuleParserService ruleParserService, SuggestionModelScorer modelScorer) {
+    public RuleSuggestionEngine(RuleParserService ruleParserService, SuggestionModelScorer modelScorer, MessageSource messageSource) {
         this.ruleParserService = ruleParserService;
         this.modelScorer = modelScorer;
+        this.messageSource = messageSource;
     }
 
     public static class Suggestion {
@@ -154,7 +157,7 @@ public class RuleSuggestionEngine {
 
     private boolean verifies(BiFunction<Integer, Integer, Set<Integer>> operation, Set<Integer> baseSet) {
         try {
-            VerificationResult result = new AxiomVerifier(baseSet, operation).verifyAll();
+            VerificationResult result = new AxiomVerifier(baseSet, operation, messageSource).verifyAll();
             return result.isHypergroup();
         } catch (RuntimeException e) {
             return false;

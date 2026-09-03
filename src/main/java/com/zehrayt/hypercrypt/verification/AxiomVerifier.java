@@ -4,6 +4,8 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.function.BiFunction;
 import java.util.function.Function;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,13 +21,15 @@ public class AxiomVerifier {
     // İki eleman alır (Integer, Integer), bir küme döndürür (Set<Integer>)
     private final BiFunction<Integer, Integer, Set<Integer>> hyperMultiplication;
     private final Set<Integer> baseSet;
+    private final MessageSource messageSource;
 
     private final BiFunction<Integer, Integer, Integer> standardAddition;
     private final Function<Integer, Integer> standardNegation;
 
-    public AxiomVerifier(Set<Integer> baseSet, BiFunction<Integer, Integer, Set<Integer>> hyperMultiplication) {
+    public AxiomVerifier(Set<Integer> baseSet, BiFunction<Integer, Integer, Set<Integer>> hyperMultiplication, MessageSource messageSource) {
         this.baseSet = baseSet;
         this.hyperMultiplication = hyperMultiplication;
+        this.messageSource = messageSource;
 
         // DÜZELTME: Hakem 3'ün "Sonlu kümelerde (Z/nZ) toplama nasıl çalışıyor?" uyarısı çözüldü.
         // Standart tam sayı toplaması yerine, kümenin boyutuna (n) göre Modüler Aritmetik kullanıyoruz.
@@ -277,6 +281,7 @@ public class AxiomVerifier {
 
 
     public VerificationResult verifyAll() {
+        java.util.Locale locale = LocaleContextHolder.getLocale();
         VerificationResult result = new VerificationResult();
 
         // 1. Kapanıklık Kontrolü (Closure)
@@ -284,8 +289,8 @@ public class AxiomVerifier {
         result.setHypergroupoid(isClosed);
 
         if (!isClosed) {
-            result.setHighestStructure("Tanımsız Yapı (Kapanıklık Sağlanmıyor)");
-            result.setFailingAxiom("Kapanıklık (Closure)");
+            result.setHighestStructure(messageSource.getMessage("axiom.structure.undefinedClosure", null, locale));
+            result.setFailingAxiom(messageSource.getMessage("axiom.name.closure", null, locale));
             result.setSemihypergroup(false);
             result.setQuasihypergroup(false);
             result.setDistributive(false);
@@ -328,27 +333,31 @@ public class AxiomVerifier {
 
         // --- EN YÜKSEK YAPIYI BELİRLE (highestStructure) ---
         if (isMultiplicativeHyperring) {
-            result.setHighestStructure("Çarpımsal Hiperhalka");
+            result.setHighestStructure(messageSource.getMessage("axiom.structure.multiplicativeHyperring", null, locale));
         } else if (!isAssociative) {
-            result.setHighestStructure("Hiper yapı (ama Yarı Hipergrup değil)");
+            result.setHighestStructure(messageSource.getMessage("axiom.structure.hyperStructureNotSemihypergroup", null, locale));
         } else if (!isValidAdditiveGroup) {
             // (R,+) abelyen grup olmadığı için hiperhalka sınıflandırması hiç yapılamıyor;
             // bu, "dağılma/negatif özellik başarısız" durumundan farklı ve daha temel bir
             // sınırlamadır, bu yüzden ayrı ve açık şekilde raporlanıyor.
             result.setHighestStructure(isHypergroup
-                ? "Hipergrup ((R,+) abelyen grup olmadığından Hiperhalka değerlendirilemedi)"
-                : "Yarı Hipergrup ((R,+) abelyen grup olmadığından Hiperhalka değerlendirilemedi)");
+                ? messageSource.getMessage("axiom.structure.hypergroupNoAdditiveGroup", null, locale)
+                : messageSource.getMessage("axiom.structure.semihypergroupNoAdditiveGroup", null, locale));
         } else if (!isDistributive) {
-            result.setHighestStructure(isHypergroup ? "Hipergrup (ama Hiperhalka değil)" : "Yarı Hipergrup (ama Hiperhalka değil)");
+            result.setHighestStructure(isHypergroup 
+                ? messageSource.getMessage("axiom.structure.hypergroupNotHyperring", null, locale)
+                : messageSource.getMessage("axiom.structure.semihypergroupNotHyperring", null, locale));
         } else {
-            result.setHighestStructure(isHypergroup ? "Hipergrup (ama Hiperhalka değil)" : "Yarı Hipergrup (ama Hiperhalka değil)");
+            result.setHighestStructure(isHypergroup 
+                ? messageSource.getMessage("axiom.structure.hypergroupNotHyperring", null, locale)
+                : messageSource.getMessage("axiom.structure.semihypergroupNotHyperring", null, locale));
         }
 
         // --- FAILINGAXIOM: HİPERGRUP SEVİYESİNİ ÖNCELİKLENDİR ---
         if (!isAssociative) {
-            result.setFailingAxiom("Birleşme Özelliği (Madde 2)");
+            result.setFailingAxiom(messageSource.getMessage("axiom.name.associativity", null, locale));
         } else if (!isQuasihypergroup) {
-            result.setFailingAxiom("Üretim Aksiyomu (Reproduction)");
+            result.setFailingAxiom(messageSource.getMessage("axiom.name.reproduction", null, locale));
         } else {
             result.setFailingAxiom(null);
         }
