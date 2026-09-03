@@ -434,6 +434,14 @@ td {
   color: #e74c3c;
 }
 
+/* DÜZELTME: "Değerlendirilmedi" durumu artık true/false'tan görsel
+   olarak da ayrılıyor (nötr gri), böylece fail-fast nedeniyle hiç
+   test edilmemiş bir aksiyom, "false" ile karıştırılmıyor. */
+.pill.not-evaluated {
+  background: rgba(0, 0, 0, 0.08);
+  color: #6b7280;
+}
+
 /* AI Kutucuğu */
 .ai-header {
   display: flex;

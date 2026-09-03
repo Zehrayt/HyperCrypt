@@ -94,6 +94,29 @@ async function showResults() {
 
 // --- YENİ YARDIMCI FONKSİYONLAR ---
 
+// DÜZELTME: Daha önce bir aksiyom sonucu backend tarafından hiç
+// değerlendirilmediğinde (örn. "fail-fast" stratejisiyle closure
+// veya birleşme testinde erken durulduğu için ilgili alan JSON'da
+// null/undefined geldiğinde), arayüz bunu doğrudan "true"/"false"
+// metniyle aynı <span class="pill ..."> kalıbına basıyordu; bu da
+// ekranda "null" ya da "undefined" yazan ya da tamamen boş görünen,
+// yanlış yorumlanmaya açık bir rozet üretiyordu (Hakem: "not
+// evaluated" ile "false" birbirinden ayırt edilemiyor). Bu yardımcı
+// fonksiyon üç durumu (true / false / henüz değerlendirilmedi) açıkça
+// ayırt eden, kendi CSS sınıfı ve okunur etiketi olan bir rozet
+// üretir.
+function pillMarkup(value) {
+  if (value === true) {
+    return `<span class="pill true">${t("func.pillTrue", "Evet")}</span>`;
+  }
+  if (value === false) {
+    return `<span class="pill false">${t("func.pillFalse", "Hayır")}</span>`;
+  }
+  // null, undefined ya da başka bir "değer yok" durumu: bu aksiyom
+  // fail-fast nedeniyle hiç test edilmemiş demektir, "false" değildir.
+  return `<span class="pill not-evaluated">${t("func.pillNotEvaluated", "Değerlendirilmedi")}</span>`;
+}
+
 // Başarılı sonuçları ekrana yazdıran fonksiyon
 function renderSuccess(data) {
   // Cayley Tablosunu Oluştur
@@ -125,11 +148,11 @@ function renderSuccess(data) {
         <ul>
             <li>
               <span>${t("func.semihypergroupLabel", "Yarı Hipergrup (Birleşme)")}</span>
-              <span class="pill ${data.semihypergroup}">${data.semihypergroup}</span>
+              ${pillMarkup(data.semihypergroup)}
             </li>
             <li>
               <span>${t("func.quasihypergroupLabel", "Kuazi Hipergrup (Üretim)")}</span>
-              <span class="pill ${data.quasihypergroup}">${data.quasihypergroup}</span>
+              ${pillMarkup(data.quasihypergroup)}
             </li>
         </ul>
 
@@ -137,11 +160,11 @@ function renderSuccess(data) {
         <ul>
             <li>
               <span>${t("func.distributiveLabel", "Dağılma Özelliği")}</span>
-              <span class="pill ${data.isDistributive}">${data.isDistributive}</span>
+              ${pillMarkup(data.isDistributive)}
             </li>
             <li>
               <span>${t("func.negativePropertyLabel", "Negatif Özelliği")}</span>
-              <span class="pill ${data.hasNegativeProperty}">${data.hasNegativeProperty}</span>
+              ${pillMarkup(data.hasNegativeProperty)}
             </li>
         </ul>
     `;
