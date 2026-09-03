@@ -1,841 +1,1667 @@
 <!doctype html>
 <html lang="tr">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Hiper-DH & MITM (Eve) Simülatörü</title>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
-  <style>
-    :root{
-      --bg:#0b0f13; --panel:#0f1720; --card:#0f1822; --muted:#94a3b8; --accent:#7c3aed; --accent-2:#06b6d4; --success:#10b981; --danger:#ef4444;
-      --glass: rgba(255,255,255,0.03);
-    }
-    *{box-sizing:border-box;font-family:Inter,system-ui,Segoe UI,Roboto,'Helvetica Neue',Arial}
-    html,body{height:100%;margin:0;background:linear-gradient(180deg,var(--bg),#071018);color:#e6eef6}
-    .wrap{max-width:1200px;margin:28px auto;padding:20px}
-    header{display:flex;align-items:center;gap:16px;margin-bottom:18px}
-    header h1{font-size:20px;margin:0;color:var(--accent)}
-    header p{margin:0;color:var(--muted);font-size:13px}
-
-    .sim-grid{display:grid;grid-template-columns:320px 1fr 320px;gap:18px}
-
-    /* left/right panels */
-    .panel{background:linear-gradient(180deg,var(--panel),#071927);border-radius:12px;padding:14px;border:1px solid rgba(255,255,255,0.03);box-shadow:0 6px 30px rgba(3,7,18,0.6)}
-    .panel h3{margin:0 0 12px 0;color:var(--accent-2)}
-    .controls{display:flex;gap:8px;flex-wrap:wrap}
-    .btn{background:var(--glass);border:1px solid rgba(255,255,255,0.04);padding:8px 12px;border-radius:10px;color:var(--muted);cursor:pointer;font-weight:600}
-    .btn.primary{background:linear-gradient(90deg,var(--accent),#004aad);color:white;border:none}
-    .btn.warn{background:linear-gradient(90deg,#92400e,#f59e0b);color:#071018}
-    .toggle{display:inline-flex;align-items:center;gap:8px}
-    .small{font-size:13px;color:var(--muted)}
-
-    /* center canvas */
-    .canvas-wrap{position:relative;background:linear-gradient(180deg,rgba(255,255,255,0.02),transparent);border-radius:12px;padding:18px;min-height:480px;display:flex;align-items:center;justify-content:center}
-    svg.network{width:100%;height:460px}
-
-    /* node styles */
-    .node{cursor:pointer}
-    .monitor{fill:linear-gradient(0deg,#0f1720,#0b1220);stroke:#1f2937;stroke-width:2}
-
-    .node-label{font-size:13px;text-anchor:middle;fill:#dbeafe}
-
-    /* info panel */
-    .info{background:linear-gradient(180deg,#071225,#0b1720);padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.03)}
-    .info-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px dashed rgba(255,255,255,0.02)}
-    .info-row:last-child{border-bottom:none}
-    .mono{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;color:#9be7ff}
-
-    /* message bubble animation */
-    .packet{fill:var(--accent);stroke:none}
-    .packet-mod{fill:var(--danger)}
-
-    /* footer */
-    footer{margin-top:14px;color:var(--muted);font-size:13px;text-align:center}
-
-    /* clickable hints */
-    .hint{font-size:12px;color:var(--muted);margin-top:8px}
-
-    /* responsive */
-    @media (max-width:980px){.sim-grid{grid-template-columns:1fr;}.canvas-wrap{min-height:420px}}
-    /* Hyper-DH toggle switch */
-    .switch{
-    width:60px; height:32px; border-radius:32px;
-    background: linear-gradient(90deg,#0b0f13,#13202a);
-    border: 2px solid rgba(255,255,255,0.06);
-    display:inline-block; position:relative; padding:3px;
-    box-shadow: inset 0 1px 0 rgba(255,255,255,0.02);
-    transition: background 220ms ease, border-color 220ms;
-    }
-    .switch .knob{
-    width:24px; height:24px; border-radius:50%;
-    background:#e6eef6; box-shadow: 0 4px 10px rgba(2,6,23,0.6);
-    transform: translateX(0); transition: transform 220ms cubic-bezier(.2,.9,.2,1);
-    border:2px solid rgba(0,0,0,0.4);
-    }
-    .switch.on{ background: linear-gradient(90deg,#0b3a4a,#07697f); border-color: rgba(0,0,0,0.25); }
-    .switch.on .knob{ transform: translateX(28px); background:#fff; }
-
-    /* small responsive tweak for header */
-    @media (max-width:980px){
-    #hyperLabel{ display:none; }
-    .switch{ width:48px; height:28px; padding:2px; }
-    .switch .knob{ width:20px; height:20px; transform:translateX(0); }
-    .switch.on .knob{ transform: translateX(22px); }
-    }
-
-    /* Pop-up Styles */
-    .popup-overlay {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0, 0, 0, 0.8);
-      backdrop-filter: blur(5px);
-      display: none;
-      justify-content: center;
-      align-items: center;
-      z-index: 1000;
-      animation: fadeIn 0.3s ease;
-    }
-
-    .popup-overlay.show {
-      display: flex;
-    }
-
-    .popup-content {
-      background: linear-gradient(180deg, var(--panel), #071927);
-      border-radius: 16px;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
-      max-width: 600px;
-      width: 90%;
-      max-height: 80vh;
-      overflow-y: auto;
-      animation: slideIn 0.3s ease;
-    }
-
-    .popup-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 20px 24px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    }
-
-    .popup-header h3 {
-      margin: 0;
-      color: var(--accent);
-      font-size: 20px;
-    }
-
-    .popup-close {
-      background: none;
-      border: none;
-      color: var(--muted);
-      font-size: 24px;
-      cursor: pointer;
-      padding: 0;
-      width: 32px;
-      height: 32px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 50%;
-      transition: all 0.2s ease;
-    }
-
-    .popup-close:hover {
-      background: rgba(255, 255, 255, 0.1);
-      color: white;
-    }
-
-    .popup-body {
-      padding: 24px;
-    }
-
-    .info-section {
-      margin-bottom: 24px;
-    }
-
-    .info-section:last-child {
-      margin-bottom: 0;
-    }
-
-    .info-section h4 {
-      color: var(--accent-2);
-      margin: 0 0 12px 0;
-      font-size: 16px;
-    }
-
-    .info-section p {
-      color: #e6eef6;
-      line-height: 1.6;
-      margin: 0 0 12px 0;
-    }
-
-    .info-section ul, .info-section ol {
-      color: #e6eef6;
-      padding-left: 20px;
-      margin: 0;
-    }
-
-    .info-section li {
-      margin-bottom: 8px;
-      line-height: 1.5;
-    }
-
-    .info-section strong {
-      color: var(--accent);
-    }
-
-    /* Help Button */
-    .help-button {
-      position: fixed;
-      bottom: 20px;
-      right: 20px;
-      width: 56px;
-      height: 56px;
-      border-radius: 50%;
-      background: linear-gradient(135deg, var(--accent), var(--accent-2));
-      border: none;
-      color: white;
-      font-size: 20px;
-      cursor: pointer;
-      box-shadow: 0 4px 20px rgba(124, 58, 237, 0.4);
-      transition: all 0.3s ease;
-      z-index: 100;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .help-button:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 25px rgba(124, 58, 237, 0.6);
-    }
-
-    /* Home Button */
-    .home-button {
-      position: fixed;
-      bottom: 20px;
-      left: 20px;
-      width: 56px;
-      height: 56px;
-      border-radius: 50%;
-      background: linear-gradient(135deg, var(--success), #059669);
-      border: none;
-      color: white;
-      font-size: 20px;
-      cursor: pointer;
-      box-shadow: 0 4px 20px rgba(16, 185, 129, 0.4);
-      transition: all 0.3s ease;
-      z-index: 100;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      text-decoration: none;
-    }
-
-    .home-button:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 25px rgba(16, 185, 129, 0.6);
-      color: white;
-    }
-
-    /* Animations */
-    @keyframes fadeIn {
-      from { opacity: 0; }
-      to { opacity: 1; }
-    }
-
-    @keyframes slideIn {
-      from { 
-        opacity: 0;
-        transform: translateY(-20px) scale(0.95);
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title data-i18n="mitm.pageTitle">Hiper-DH & MITM (Eve) Simülatörü</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css"
+    />
+    <script src="../js/i18n.js"></script>
+    <style>
+      :root {
+        --bg: #0b0f13;
+        --panel: #0f1720;
+        --card: #0f1822;
+        --muted: #94a3b8;
+        --accent: #7c3aed;
+        --accent-2: #06b6d4;
+        --success: #10b981;
+        --danger: #ef4444;
+        --glass: rgba(255, 255, 255, 0.03);
       }
-      to { 
-        opacity: 1;
-        transform: translateY(0) scale(1);
+      * {
+        box-sizing: border-box;
+        font-family:
+          Inter,
+          system-ui,
+          Segoe UI,
+          Roboto,
+          "Helvetica Neue",
+          Arial;
       }
-    }
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+        background: linear-gradient(180deg, var(--bg), #071018);
+        color: #e6eef6;
+      }
+      .wrap {
+        max-width: 1200px;
+        margin: 28px auto;
+        padding: 20px;
+      }
+      header {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+        margin-bottom: 18px;
+      }
+      header h1 {
+        font-size: 20px;
+        margin: 0;
+        color: var(--accent);
+      }
+      header p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 13px;
+      }
 
-    /* Responsive adjustments */
-    @media (max-width: 768px) {
+      .sim-grid {
+        display: grid;
+        grid-template-columns: 320px 1fr 320px;
+        gap: 18px;
+      }
+
+      /* left/right panels */
+      .panel {
+        background: linear-gradient(180deg, var(--panel), #071927);
+        border-radius: 12px;
+        padding: 14px;
+        border: 1px solid rgba(255, 255, 255, 0.03);
+        box-shadow: 0 6px 30px rgba(3, 7, 18, 0.6);
+      }
+      .panel h3 {
+        margin: 0 0 12px 0;
+        color: var(--accent-2);
+      }
+      .controls {
+        display: flex;
+        gap: 8px;
+        flex-wrap: wrap;
+      }
+      .btn {
+        background: var(--glass);
+        border: 1px solid rgba(255, 255, 255, 0.04);
+        padding: 8px 12px;
+        border-radius: 10px;
+        color: var(--muted);
+        cursor: pointer;
+        font-weight: 600;
+      }
+      .btn.primary {
+        background: linear-gradient(90deg, var(--accent), #004aad);
+        color: white;
+        border: none;
+      }
+      .btn.warn {
+        background: linear-gradient(90deg, #92400e, #f59e0b);
+        color: #071018;
+      }
+      .toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+      }
+      .small {
+        font-size: 13px;
+        color: var(--muted);
+      }
+
+      /* center canvas */
+      .canvas-wrap {
+        position: relative;
+        background: linear-gradient(
+          180deg,
+          rgba(255, 255, 255, 0.02),
+          transparent
+        );
+        border-radius: 12px;
+        padding: 18px;
+        min-height: 480px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      svg.network {
+        width: 100%;
+        height: 460px;
+      }
+
+      /* node styles */
+      .node {
+        cursor: pointer;
+      }
+      .monitor {
+        fill: linear-gradient(0deg, #0f1720, #0b1220);
+        stroke: #1f2937;
+        stroke-width: 2;
+      }
+
+      .node-label {
+        font-size: 13px;
+        text-anchor: middle;
+        fill: #dbeafe;
+      }
+
+      /* info panel */
+      .info {
+        background: linear-gradient(180deg, #071225, #0b1720);
+        padding: 12px;
+        border-radius: 10px;
+        border: 1px solid rgba(255, 255, 255, 0.03);
+      }
+      .info-row {
+        display: flex;
+        justify-content: space-between;
+        padding: 6px 0;
+        border-bottom: 1px dashed rgba(255, 255, 255, 0.02);
+      }
+      .info-row:last-child {
+        border-bottom: none;
+      }
+      .mono {
+        font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+        color: #9be7ff;
+      }
+
+      /* message bubble animation */
+      .packet {
+        fill: var(--accent);
+        stroke: none;
+      }
+      .packet-mod {
+        fill: var(--danger);
+      }
+
+      /* footer */
+      footer {
+        margin-top: 14px;
+        color: var(--muted);
+        font-size: 13px;
+        text-align: center;
+      }
+
+      /* clickable hints */
+      .hint {
+        font-size: 12px;
+        color: var(--muted);
+        margin-top: 8px;
+      }
+
+      /* responsive */
+      @media (max-width: 980px) {
+        .sim-grid {
+          grid-template-columns: 1fr;
+        }
+        .canvas-wrap {
+          min-height: 420px;
+        }
+      }
+      /* Hyper-DH toggle switch */
+      .switch {
+        width: 60px;
+        height: 32px;
+        border-radius: 32px;
+        background: linear-gradient(90deg, #0b0f13, #13202a);
+        border: 2px solid rgba(255, 255, 255, 0.06);
+        display: inline-block;
+        position: relative;
+        padding: 3px;
+        box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.02);
+        transition:
+          background 220ms ease,
+          border-color 220ms;
+      }
+      .switch .knob {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        background: #e6eef6;
+        box-shadow: 0 4px 10px rgba(2, 6, 23, 0.6);
+        transform: translateX(0);
+        transition: transform 220ms cubic-bezier(0.2, 0.9, 0.2, 1);
+        border: 2px solid rgba(0, 0, 0, 0.4);
+      }
+      .switch.on {
+        background: linear-gradient(90deg, #0b3a4a, #07697f);
+        border-color: rgba(0, 0, 0, 0.25);
+      }
+      .switch.on .knob {
+        transform: translateX(28px);
+        background: #fff;
+      }
+
+      /* small responsive tweak for header */
+      @media (max-width: 980px) {
+        #hyperLabel {
+          display: none;
+        }
+        .switch {
+          width: 48px;
+          height: 28px;
+          padding: 2px;
+        }
+        .switch .knob {
+          width: 20px;
+          height: 20px;
+          transform: translateX(0);
+        }
+        .switch.on .knob {
+          transform: translateX(22px);
+        }
+      }
+
+      /* Pop-up Styles */
+      .popup-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.8);
+        backdrop-filter: blur(5px);
+        display: none;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+        animation: fadeIn 0.3s ease;
+      }
+
+      .popup-overlay.show {
+        display: flex;
+      }
+
       .popup-content {
-        width: 95%;
-        margin: 20px;
+        background: linear-gradient(180deg, var(--panel), #071927);
+        border-radius: 16px;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8);
+        max-width: 600px;
+        width: 90%;
+        max-height: 80vh;
+        overflow-y: auto;
+        animation: slideIn 0.3s ease;
       }
-      
-      .popup-header, .popup-body {
-        padding: 16px;
+
+      .popup-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 20px 24px;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.1);
       }
-      
-      .help-button, .home-button {
-        width: 48px;
-        height: 48px;
-        font-size: 18px;
+
+      .popup-header h3 {
+        margin: 0;
+        color: var(--accent);
+        font-size: 20px;
       }
-    }
-  </style>
-</head>
-<body>
-  <div class="wrap">
-    <header>
-      <div style="width:48px;height:48px;border-radius:10px;background:linear-gradient(135deg,var(--accent),var(--accent-2));display:flex;align-items:center;justify-content:center;font-weight:800">MITM</div>
-      <div>
-        <h1>Hiper-DH & Man‑In‑The‑Middle Simülatörü</h1>
-        <p>Alice ↔ Bob iletişimini canlandırın. Eve (MITM) aktifse mesajları yakalar/degistirir. Node'lara tıklayın.</p>
-      </div>
-      <!-- Hiper-DH On/Off toggle + help -->
-        <div style="margin-left:auto;display:flex;align-items:center;gap:12px">
-        <!-- Toggle wrapper -->
-        <div id="hyperToggle" style="display:flex;align-items:center;gap:8px;cursor:pointer" aria-label="Hiper-DH Aç/Kapa" role="button" tabindex="0">
+
+      .popup-close {
+        background: none;
+        border: none;
+        color: var(--muted);
+        font-size: 24px;
+        cursor: pointer;
+        padding: 0;
+        width: 32px;
+        height: 32px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50%;
+        transition: all 0.2s ease;
+      }
+
+      .popup-close:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: white;
+      }
+
+      .popup-body {
+        padding: 24px;
+      }
+
+      .info-section {
+        margin-bottom: 24px;
+      }
+
+      .info-section:last-child {
+        margin-bottom: 0;
+      }
+
+      .info-section h4 {
+        color: var(--accent-2);
+        margin: 0 0 12px 0;
+        font-size: 16px;
+      }
+
+      .info-section p {
+        color: #e6eef6;
+        line-height: 1.6;
+        margin: 0 0 12px 0;
+      }
+
+      .info-section ul,
+      .info-section ol {
+        color: #e6eef6;
+        padding-left: 20px;
+        margin: 0;
+      }
+
+      .info-section li {
+        margin-bottom: 8px;
+        line-height: 1.5;
+      }
+
+      .info-section strong {
+        color: var(--accent);
+      }
+
+      /* Help Button */
+      .help-button {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--accent), var(--accent-2));
+        border: none;
+        color: white;
+        font-size: 20px;
+        cursor: pointer;
+        box-shadow: 0 4px 20px rgba(124, 58, 237, 0.4);
+        transition: all 0.3s ease;
+        z-index: 100;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+
+      .help-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 25px rgba(124, 58, 237, 0.6);
+      }
+
+      /* Home Button */
+      .home-button {
+        position: fixed;
+        bottom: 20px;
+        left: 20px;
+        width: 56px;
+        height: 56px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, var(--success), #059669);
+        border: none;
+        color: white;
+        font-size: 20px;
+        cursor: pointer;
+        box-shadow: 0 4px 20px rgba(16, 185, 129, 0.4);
+        transition: all 0.3s ease;
+        z-index: 100;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        text-decoration: none;
+      }
+
+      .home-button:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 6px 25px rgba(16, 185, 129, 0.6);
+        color: white;
+      }
+
+      /* Dil Butonları*/
+      .lang-switch-btn {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        color: var(--muted);
+        border-radius: 8px;
+        padding: 6px 10px;
+        font-size: 13px;
+        font-weight: 700;
+        cursor: pointer;
+        transition: all 0.2s ease;
+      }
+      .lang-switch-btn:hover {
+        color: #fff;
+      }
+      .lang-switch-btn.active {
+        background: #6c5ce7 !important;
+        color: white !important;
+        border-color: transparent !important;
+      }
+
+      /* Animations */
+      @keyframes fadeIn {
+        from {
+          opacity: 0;
+        }
+        to {
+          opacity: 1;
+        }
+      }
+
+      @keyframes slideIn {
+        from {
+          opacity: 0;
+          transform: translateY(-20px) scale(0.95);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0) scale(1);
+        }
+      }
+
+      /* Responsive adjustments */
+      @media (max-width: 768px) {
+        .popup-content {
+          width: 95%;
+          margin: 20px;
+        }
+
+        .popup-header,
+        .popup-body {
+          padding: 16px;
+        }
+
+        .help-button,
+        .home-button {
+          width: 48px;
+          height: 48px;
+          font-size: 18px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <div
+          style="
+            width: 48px;
+            height: 48px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, var(--accent), var(--accent-2));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+          "
+        >
+          MITM
+        </div>
+        <div>
+          <h1 data-i18n="mitm.heading">
+            Hiper-DH & Man‑In‑The‑Middle Simülatörü
+          </h1>
+          <p data-i18n="mitm.subheading">
+            Alice ↔ Bob iletişimini canlandırın. Eve (MITM) aktifse mesajları
+            yakalar/degistirir. Node'lara tıklayın.
+          </p>
+        </div>
+        <!-- Hiper-DH On/Off toggle + help -->
+        <div
+          style="
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+          "
+        >
+          <!-- Toggle wrapper -->
+          <div
+            id="hyperToggle"
+            style="
+              display: flex;
+              align-items: center;
+              gap: 8px;
+              cursor: pointer;
+            "
+            aria-label="Hiper-DH Aç/Kapa"
+            data-i18n-attr="aria-label:mitm.hyperToggleAria"
+            role="button"
+            tabindex="0"
+          >
             <div class="switch" id="hyperSwitch" aria-hidden="true">
-            <div class="knob"></div>
+              <div class="knob"></div>
             </div>
-            <div id="hyperLabel" style="font-size:13px;color:var(--muted);min-width:48px;text-align:left">Hiper-DH: <span id="hyperStateText">ON</span></div>
-        </div>
-
-        <!-- Help button -->
-        <button id="hyperHelp" class="btn" title="Ne demek olduğunu gör" style="padding:6px 8px;font-size:13px">?</button>
-        </div>
-    </header>
-
-    <div class="sim-grid">
-      <!-- LEFT: Controls / Alice -->
-      <div class="panel">
-        <h3>Alice (Client)</h3>
-        <div class="info">
-          <div class="info-row"><div class="small">Gizli Anahtar (a)</div><div id="alicePrivate" class="mono">6</div></div>
-          <div class="info-row"><div class="small">Genel Anahtar (A)</div><div id="alicePublic" class="mono">—</div></div>
-          <div class="info-row"><div class="small">Ortak Sır (S)</div><div id="aliceSecret" class="mono">—</div></div>
-          <div class="info-row">
-            <div class="small">Hiper-İşlem Kuralı</div>
-            <input type="text" id="ruleInput" class="mono" value="Math.pow(a, b) % n" style="width: 150px; background: transparent; border: 1px solid #334155; color: #9be7ff;">
-          </div>
-          <div class="info-row">
-            <div class="small">Küme (p, g)</div>
-            <input type="number" id="modInput" class="mono" value="23" style="width:60px;background:transparent;border:1px solid #334155;color:#9be7ff;">
-            <input type="number" id="genInput" class="mono" value="5" style="width:60px;background:transparent;border:1px solid #334155;color:#9be7ff;">
+            <div
+              id="hyperLabel"
+              style="
+                font-size: 13px;
+                color: var(--muted);
+                min-width: 48px;
+                text-align: left;
+              "
+            >
+              <span data-i18n="mitm.hyperDhLabel">Hiper-DH:</span>
+              <span id="hyperStateText">ON</span>
+            </div>
           </div>
 
+          <!-- Help button -->
+          <button
+            id="hyperHelp"
+            class="btn"
+            title="Ne demek olduğunu gör"
+            data-i18n-attr="title:mitm.hyperHelpTitle"
+            style="padding: 6px 8px; font-size: 13px"
+          >
+            ?
+          </button>
+          <!-- Language Switcher -->
+          <div class="lang-switch" style="display: flex; gap: 6px">
+            <button class="lang-switch-btn" data-lang="tr" type="button">
+              TR
+            </button>
+            <button class="lang-switch-btn" data-lang="en" type="button">
+              EN
+            </button>
+          </div>
         </div>
+      </header>
 
-        <div style="margin-top:12px" class="controls">
-          <button class="btn primary" onclick="setActive('alice')">Alice'i Seç</button>
-          <button class="btn" onclick="generate('alice')">Genel Anahtar Hesapla</button>
-          <button class="btn" onclick="sendMessage('alice')">Bob'a Mesaj Gönder</button>
-        </div>
-
-        <div class="hint">Alice monitörüne tıklayın — ayrıntılar panelde gösterilir.</div>
-      </div>
-
-      <!-- CENTER: network visualization -->
-      <div class="canvas-wrap panel">
-        <svg class="network" viewBox="0 0 1000 460" xmlns="http://www.w3.org/2000/svg">
-          <!-- positions: Alice left, Bob right, Eve top-middle -->
-          <!-- links (paths) -->
-          <defs>
-            <filter id="glow">
-              <feGaussianBlur stdDeviation="4" result="coloredBlur"/>
-              <feMerge>
-                <feMergeNode in="coloredBlur"/>
-                <feMergeNode in="SourceGraphic"/>
-              </feMerge>
-            </filter>
-          </defs>
-
-          <line id="linkA-E" x1="180" y1="340" x2="500" y2="120" stroke="rgba(255,255,255,0.06)" stroke-width="2" stroke-dasharray="6 6" />
-          <line id="linkE-B" x1="500" y1="120" x2="820" y2="340" stroke="rgba(255,255,255,0.06)" stroke-width="2" stroke-dasharray="6 6" />
-          <line id="linkA-B" x1="180" y1="340" x2="820" y2="340" stroke="rgba(255,255,255,0.03)" stroke-width="1" />
-
-          <!-- Alice monitor (group) -->
-          <g id="alice" class="node" transform="translate(120,260)" onclick="nodeClick('alice')">
-            <rect x="40" y="-50" width="120" height="80" rx="8" fill="#071428" stroke="#18384f"/>
-            <rect x="58" y="-34" width="84" height="50" rx="4" fill="#021726" stroke="#0b3a4a"/>
-            <rect x="90" y="26" width="36" height="10" rx="3" fill="#0b1220"/>
-            <text x="100" y="-40" class="node-label">Alice</text>
-          </g>
-
-          <!-- Eve monitor -->
-          <g id="eve" class="node" transform="translate(460,60)" onclick="nodeClick('eve')">
-            <rect x="40" y="-50" width="120" height="80" rx="8" fill="#170b12" stroke="#4a1f2e"/>
-            <rect x="58" y="-34" width="84" height="50" rx="4" fill="#2a0f17"/>
-            <rect x="90" y="26" width="36" height="10" rx="3" fill="#1a0b0f"/>
-            <text x="100" y="-40" class="node-label">Eve (MITM)</text>
-          </g>
-
-          <!-- Bob monitor -->
-          <g id="bob" class="node" transform="translate(780,260)" onclick="nodeClick('bob')">
-            <rect x="40" y="-50" width="120" height="80" rx="8" fill="#061219" stroke="#153046"/>
-            <rect x="58" y="-34" width="84" height="50" rx="4" fill="#031423"/>
-            <rect x="90" y="26" width="36" height="10" rx="3" fill="#07121a"/>
-            <text x="100" y="-40" class="node-label">Bob</text>
-          </g>
-
-          <!-- animated packet (initially hidden) -->
-          <circle id="packet" cx="0" cy="0" r="8" class="packet" style="visibility:hidden;filter:url(#glow)" />
-          <circle id="packetMod" cx="0" cy="0" r="8" class="packet-mod" style="visibility:hidden;filter:url(#glow)" />
-        </svg>
-
-        <div style="position:absolute;right:18px;bottom:14px;min-width:220px">
+      <div class="sim-grid">
+        <!-- LEFT: Controls / Alice -->
+        <div class="panel">
+          <h3 data-i18n="mitm.aliceTitle">Alice (Client)</h3>
           <div class="info">
-            <div class="info-row"><div class="small">Modulus (p)</div><div id="modVal" class="mono">23</div></div>
-            <div class="info-row"><div class="small">Üreteç (g)</div><div id="genVal" class="mono">5</div></div>
-            <div style="padding-top:8px"><button class="btn" onclick="resetSim()">Sıfırla</button> <button class="btn warn" onclick="toggleEve()" id="eveBtn">Eve: Pasif</button> <button class="btn warn" onclick="eveBruteForce()">Eve: Kaba Kuvvet Dene</button></div>
+            <div class="info-row">
+              <div class="small" data-i18n="mitm.privateKeyLabel">
+                Gizli Anahtar (a)
+              </div>
+              <div id="alicePrivate" class="mono">6</div>
+            </div>
+            <div class="info-row">
+              <div class="small" data-i18n="mitm.publicKeyLabel">
+                Genel Anahtar (A)
+              </div>
+              <div id="alicePublic" class="mono">—</div>
+            </div>
+            <div class="info-row">
+              <div class="small" data-i18n="mitm.sharedSecretLabel">
+                Ortak Sır (S)
+              </div>
+              <div id="aliceSecret" class="mono">—</div>
+            </div>
+            <div class="info-row">
+              <div class="small" data-i18n="mitm.ruleFieldLabel">
+                Hiper-İşlem Kuralı
+              </div>
+              <input
+                type="text"
+                id="ruleInput"
+                class="mono"
+                value="Math.pow(a, b) % n"
+                style="
+                  width: 150px;
+                  background: transparent;
+                  border: 1px solid #334155;
+                  color: #9be7ff;
+                "
+              />
+            </div>
+            <div class="info-row">
+              <div class="small" data-i18n="mitm.setFieldLabel">
+                Küme (p, g)
+              </div>
+              <input
+                type="number"
+                id="modInput"
+                class="mono"
+                value="23"
+                style="
+                  width: 60px;
+                  background: transparent;
+                  border: 1px solid #334155;
+                  color: #9be7ff;
+                "
+              />
+              <input
+                type="number"
+                id="genInput"
+                class="mono"
+                value="5"
+                style="
+                  width: 60px;
+                  background: transparent;
+                  border: 1px solid #334155;
+                  color: #9be7ff;
+                "
+              />
+            </div>
+          </div>
+
+          <div style="margin-top: 12px" class="controls">
+            <button
+              class="btn primary"
+              onclick="setActive('alice')"
+              data-i18n="mitm.selectAliceBtn"
+            >
+              Alice'i Seç
+            </button>
+            <button
+              class="btn"
+              onclick="generate('alice')"
+              data-i18n="mitm.calcPublicBtn"
+            >
+              Genel Anahtar Hesapla
+            </button>
+            <button
+              class="btn"
+              onclick="sendMessage('alice')"
+              data-i18n="mitm.sendToBobBtn"
+            >
+              Bob'a Mesaj Gönder
+            </button>
+          </div>
+
+          <div class="hint" data-i18n="mitm.aliceHint">
+            Alice monitörüne tıklayın — ayrıntılar panelde gösterilir.
+          </div>
+        </div>
+
+        <!-- CENTER: network visualization -->
+        <div class="canvas-wrap panel">
+          <svg
+            class="network"
+            viewBox="0 0 1000 460"
+            xmlns="http://www.w3.org/2000/svg"
+          >
+            <!-- positions: Alice left, Bob right, Eve top-middle -->
+            <!-- links (paths) -->
+            <defs>
+              <filter id="glow">
+                <feGaussianBlur stdDeviation="4" result="coloredBlur" />
+                <feMerge>
+                  <feMergeNode in="coloredBlur" />
+                  <feMergeNode in="SourceGraphic" />
+                </feMerge>
+              </filter>
+            </defs>
+
+            <line
+              id="linkA-E"
+              x1="180"
+              y1="340"
+              x2="500"
+              y2="120"
+              stroke="rgba(255,255,255,0.06)"
+              stroke-width="2"
+              stroke-dasharray="6 6"
+            />
+            <line
+              id="linkE-B"
+              x1="500"
+              y1="120"
+              x2="820"
+              y2="340"
+              stroke="rgba(255,255,255,0.06)"
+              stroke-width="2"
+              stroke-dasharray="6 6"
+            />
+            <line
+              id="linkA-B"
+              x1="180"
+              y1="340"
+              x2="820"
+              y2="340"
+              stroke="rgba(255,255,255,0.03)"
+              stroke-width="1"
+            />
+
+            <!-- Alice monitor (group) -->
+            <g
+              id="alice"
+              class="node"
+              transform="translate(120,260)"
+              onclick="nodeClick('alice')"
+            >
+              <rect
+                x="40"
+                y="-50"
+                width="120"
+                height="80"
+                rx="8"
+                fill="#071428"
+                stroke="#18384f"
+              />
+              <rect
+                x="58"
+                y="-34"
+                width="84"
+                height="50"
+                rx="4"
+                fill="#021726"
+                stroke="#0b3a4a"
+              />
+              <rect
+                x="90"
+                y="26"
+                width="36"
+                height="10"
+                rx="3"
+                fill="#0b1220"
+              />
+              <text x="100" y="-40" class="node-label">Alice</text>
+            </g>
+
+            <!-- Eve monitor -->
+            <g
+              id="eve"
+              class="node"
+              transform="translate(460,60)"
+              onclick="nodeClick('eve')"
+            >
+              <rect
+                x="40"
+                y="-50"
+                width="120"
+                height="80"
+                rx="8"
+                fill="#170b12"
+                stroke="#4a1f2e"
+              />
+              <rect
+                x="58"
+                y="-34"
+                width="84"
+                height="50"
+                rx="4"
+                fill="#2a0f17"
+              />
+              <rect
+                x="90"
+                y="26"
+                width="36"
+                height="10"
+                rx="3"
+                fill="#1a0b0f"
+              />
+              <text x="100" y="-40" class="node-label">Eve (MITM)</text>
+            </g>
+
+            <!-- Bob monitor -->
+            <g
+              id="bob"
+              class="node"
+              transform="translate(780,260)"
+              onclick="nodeClick('bob')"
+            >
+              <rect
+                x="40"
+                y="-50"
+                width="120"
+                height="80"
+                rx="8"
+                fill="#061219"
+                stroke="#153046"
+              />
+              <rect
+                x="58"
+                y="-34"
+                width="84"
+                height="50"
+                rx="4"
+                fill="#031423"
+              />
+              <rect
+                x="90"
+                y="26"
+                width="36"
+                height="10"
+                rx="3"
+                fill="#07121a"
+              />
+              <text x="100" y="-40" class="node-label">Bob</text>
+            </g>
+
+            <!-- animated packet (initially hidden) -->
+            <circle
+              id="packet"
+              cx="0"
+              cy="0"
+              r="8"
+              class="packet"
+              style="visibility: hidden; filter: url(#glow)"
+            />
+            <circle
+              id="packetMod"
+              cx="0"
+              cy="0"
+              r="8"
+              class="packet-mod"
+              style="visibility: hidden; filter: url(#glow)"
+            />
+          </svg>
+
+          <div
+            style="
+              position: absolute;
+              right: 18px;
+              bottom: 14px;
+              min-width: 220px;
+            "
+          >
+            <div class="info">
+              <div class="info-row">
+                <div class="small" data-i18n="mitm.modulusLabel">
+                  Modulus (p)
+                </div>
+                <div id="modVal" class="mono">23</div>
+              </div>
+              <div class="info-row">
+                <div class="small" data-i18n="mitm.generatorLabel">
+                  Üreteç (g)
+                </div>
+                <div id="genVal" class="mono">5</div>
+              </div>
+              <div style="padding-top: 8px">
+                <button
+                  class="btn"
+                  onclick="resetSim()"
+                  data-i18n="mitm.resetBtn"
+                >
+                  Sıfırla
+                </button>
+                <button class="btn warn" onclick="toggleEve()" id="eveBtn">
+                  Eve: Pasif
+                </button>
+                <button
+                  class="btn warn"
+                  onclick="eveBruteForce()"
+                  data-i18n="mitm.bruteForceBtn"
+                >
+                  Eve: Kaba Kuvvet Dene
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT: Controls / Bob -->
+        <div class="panel">
+          <h3 data-i18n="mitm.bobTitle">Bob (Server)</h3>
+          <div class="info">
+            <div class="info-row">
+              <div class="small" data-i18n="mitm.privateKeyLabelB">
+                Gizli Anahtar (b)
+              </div>
+              <div id="bobPrivate" class="mono">15</div>
+            </div>
+            <div class="info-row">
+              <div class="small" data-i18n="mitm.publicKeyLabelB">
+                Genel Anahtar (B)
+              </div>
+              <div id="bobPublic" class="mono">—</div>
+            </div>
+            <div class="info-row">
+              <div class="small" data-i18n="mitm.sharedSecretLabel">
+                Ortak Sır (S)
+              </div>
+              <div id="bobSecret" class="mono">—</div>
+            </div>
+          </div>
+
+          <div style="margin-top: 12px" class="controls">
+            <button
+              class="btn primary"
+              onclick="setActive('bob')"
+              data-i18n="mitm.selectBobBtn"
+            >
+              Bob'u Seç
+            </button>
+            <button
+              class="btn"
+              onclick="generate('bob')"
+              data-i18n="mitm.calcPublicBtn"
+            >
+              Genel Anahtar Hesapla
+            </button>
+            <button
+              class="btn"
+              onclick="sendMessage('bob')"
+              data-i18n="mitm.sendToAliceBtn"
+            >
+              Alice'a Mesaj Gönder
+            </button>
+          </div>
+
+          <div class="hint" data-i18n="mitm.bobHint">
+            Bob monitörüne tıklayın — ayrıntılar panelde gösterilir.
           </div>
         </div>
       </div>
 
-      <!-- RIGHT: Controls / Bob -->
-      <div class="panel">
-        <h3>Bob (Server)</h3>
-        <div class="info">
-          <div class="info-row"><div class="small">Gizli Anahtar (b)</div><div id="bobPrivate" class="mono">15</div></div>
-          <div class="info-row"><div class="small">Genel Anahtar (B)</div><div id="bobPublic" class="mono">—</div></div>
-          <div class="info-row"><div class="small">Ortak Sır (S)</div><div id="bobSecret" class="mono">—</div></div>
+      <!-- DETAILS / action log -->
+      <div style="margin-top: 16px; display: flex; gap: 12px; flex-wrap: wrap">
+        <div style="flex: 1; min-width: 320px" class="panel">
+          <h3 data-i18n="mitm.selectedNodeTitle">Seçili Düğüm & Eylemler</h3>
+          <div id="selectedInfo" class="info">
+            <div class="small" data-i18n="mitm.noNodeSelected">
+              Henüz bir düğüm seçilmedi. Alice/Bob/Eve'ye tıklayın.
+            </div>
+          </div>
         </div>
 
-        <div style="margin-top:12px" class="controls">
-          <button class="btn primary" onclick="setActive('bob')">Bob'u Seç</button>
-          <button class="btn" onclick="generate('bob')">Genel Anahtar Hesapla</button>
-          <button class="btn" onclick="sendMessage('bob')">Alice'a Mesaj Gönder</button>
+        <div style="width: 420px; min-width: 280px" class="panel">
+          <h3 data-i18n="mitm.activityLogTitle">İşlem Günlüğü</h3>
+          <div
+            id="log"
+            style="
+              max-height: 180px;
+              overflow: auto;
+              padding: 8px;
+              font-size: 13px;
+              color: var(--muted);
+            "
+          ></div>
         </div>
+      </div>
 
-        <div class="hint">Bob monitörüne tıklayın — ayrıntılar panelde gösterilir.</div>
+      <footer data-i18n="mitm.footerNote">
+        Bu simülatör tamamen istemci tarafında çalışır — MITM davranışını
+        görselleştirir. Gerçek kriptografi için güçlü asal sayılar ve
+        kütüphaneler kullanın.
+      </footer>
+    </div>
+
+    <!-- Information Pop-up -->
+    <div id="infoPopup" class="popup-overlay">
+      <div class="popup-content">
+        <div class="popup-header">
+          <h3 data-i18n="mitm.popupTitle">
+            Hiper-DH & MITM Simülatörü Hakkında
+          </h3>
+          <button class="popup-close" onclick="closePopup()">&times;</button>
+        </div>
+        <div class="popup-body">
+          <div class="info-section">
+            <h4 data-i18n="mitm.infoProtocolTitle">
+              🔐 Hiper-Diffie-Hellman Protokolü
+            </h4>
+            <p data-i18n="mitm.infoProtocolText">
+              Bu simülatör, hiperhalkalar kullanarak geliştirilmiş
+              Diffie-Hellman anahtar değişim protokolünü gösterir. Klasik DH
+              protokolünden farklı olarak, hiperhalka yapısı daha güçlü güvenlik
+              sağlar.
+            </p>
+          </div>
+          <div class="info-section">
+            <h4 data-i18n="mitm.infoParticipantsTitle">👥 Katılımcılar</h4>
+            <ul>
+              <li data-i18n="mitm.infoParticipantAlice">
+                <strong>Alice:</strong> İlk taraf, gizli anahtar (a) ile genel
+                anahtar (A) üretir
+              </li>
+              <li data-i18n="mitm.infoParticipantBob">
+                <strong>Bob:</strong> İkinci taraf, gizli anahtar (b) ile genel
+                anahtar (B) üretir
+              </li>
+              <li data-i18n="mitm.infoParticipantEve">
+                <strong>Eve:</strong> Man-in-the-Middle saldırganı, mesajları
+                yakalayabilir ve değiştirebilir
+              </li>
+            </ul>
+          </div>
+          <div class="info-section">
+            <h4 data-i18n="mitm.infoHowTitle">⚙️ Nasıl Kullanılır</h4>
+            <ol>
+              <li data-i18n="mitm.infoHow1">
+                Hiper-DH modunu açın/kapatın (üst kısımdaki toggle)
+              </li>
+              <li data-i18n="mitm.infoHow2">
+                Alice veya Bob'u seçin ve "Genel Anahtar Hesapla" butonuna
+                tıklayın
+              </li>
+              <li data-i18n="mitm.infoHow3">
+                Her iki tarafın genel anahtarları hesaplandıktan sonra ortak
+                sırlar otomatik hesaplanır
+              </li>
+              <li data-i18n="mitm.infoHow4">
+                Eve'yi aktif ederek MITM saldırısını simüle edin
+              </li>
+              <li data-i18n="mitm.infoHow5">
+                "Eve: Kaba Kuvvet Dene" ile gerçek bir özel anahtar arama
+                saldırısı çalıştırın
+              </li>
+              <li data-i18n="mitm.infoHow6">
+                Mesaj göndererek iletişimi test edin
+              </li>
+            </ol>
+          </div>
+          <div class="info-section">
+            <h4 data-i18n="mitm.infoTechTitle">🔧 Teknik Detaylar</h4>
+            <p data-i18n="mitm.infoTechModulus">
+              <strong>Modulus (p):</strong> Asal sayı, güvenlik için büyük
+              olmalı
+            </p>
+            <p data-i18n="mitm.infoTechGenerator">
+              <strong>Üreteç (g):</strong> Modulus'a göre primitive root
+            </p>
+            <p data-i18n="mitm.infoTechRule">
+              <strong>Kural:</strong> Hiperhalka işlemi tanımlar (örn:
+              Math.pow(a, b) % n)
+            </p>
+          </div>
+        </div>
       </div>
     </div>
 
-    <!-- DETAILS / action log -->
-    <div style="margin-top:16px;display:flex;gap:12px;flex-wrap:wrap">
-      <div style="flex:1;min-width:320px" class="panel">
-        <h3>Seçili Düğüm & Eylemler</h3>
-        <div id="selectedInfo" class="info">
-          <div class="small">Henüz bir düğüm seçilmedi. Alice/Bob/Eve'ye tıklayın.</div>
-        </div>
-      </div>
+    <!-- Help Button -->
+    <button
+      id="helpButton"
+      class="help-button"
+      onclick="openPopup()"
+      title="Yardım"
+      data-i18n-attr="title:mitm.helpTitle"
+    >
+      <i class="fas fa-question"></i>
+    </button>
 
-      <div style="width:420px;min-width:280px" class="panel">
-        <h3>İşlem Günlüğü</h3>
-        <div id="log" style="max-height:180px;overflow:auto;padding:8px;font-size:13px;color:var(--muted)"></div>
-      </div>
-    </div>
+    <!-- Home Button -->
+    <a
+      href="../Anasayfa/index.html"
+      class="home-button"
+      title="Ana Sayfaya Dön"
+      data-i18n-attr="title:mitm.homeTitle"
+    >
+      <i class="fas fa-home"></i>
+    </a>
 
-    <footer>Bu simülatör tamamen istemci tarafında çalışır — MITM davranışını görselleştirir. Gerçek kriptografi için güçlü asal sayılar ve kütüphaneler kullanın.</footer>
-  </div>
+    <script>
+      const API_BASE_URL = "https://hypercrypt.up.railway.app";
+      // --- state ---
+      const state = {
+        modulus: 23,
+        generator: 5,
+        alicePrivate: 6,
+        bobPrivate: 15,
+        alicePublic: null,
+        bobPublic: null,
+        aliceSecret: null,
+        bobSecret: null,
+        eveActive: false,
+        selected: null,
+      };
 
-  <!-- Information Pop-up -->
-  <div id="infoPopup" class="popup-overlay">
-    <div class="popup-content">
-      <div class="popup-header">
-        <h3>Hiper-DH & MITM Simülatörü Hakkında</h3>
-        <button class="popup-close" onclick="closePopup()">&times;</button>
-      </div>
-      <div class="popup-body">
-        <div class="info-section">
-          <h4>🔐 Hiper-Diffie-Hellman Protokolü</h4>
-          <p>Bu simülatör, hiperhalkalar kullanarak geliştirilmiş Diffie-Hellman anahtar değişim protokolünü gösterir. Klasik DH protokolünden farklı olarak, hiperhalka yapısı daha güçlü güvenlik sağlar.</p>
-        </div>
-        <div class="info-section">
-          <h4>👥 Katılımcılar</h4>
-          <ul>
-            <li><strong>Alice:</strong> İlk taraf, gizli anahtar (a) ile genel anahtar (A) üretir</li>
-            <li><strong>Bob:</strong> İkinci taraf, gizli anahtar (b) ile genel anahtar (B) üretir</li>
-            <li><strong>Eve:</strong> Man-in-the-Middle saldırganı, mesajları yakalayabilir ve değiştirebilir</li>
-          </ul>
-        </div>
-        <div class="info-section">
-          <h4>⚙️ Nasıl Kullanılır</h4>
-          <ol>
-            <li>Hiper-DH modunu açın/kapatın (üst kısımdaki toggle)</li>
-            <li>Alice veya Bob'u seçin ve "Genel Anahtar Hesapla" butonuna tıklayın</li>
-            <li>Her iki tarafın genel anahtarları hesaplandıktan sonra ortak sırlar otomatik hesaplanır</li>
-            <li>Eve'yi aktif ederek MITM saldırısını simüle edin</li>
-            <li>"Eve: Kaba Kuvvet Dene" ile gerçek bir özel anahtar arama saldırısı çalıştırın</li>
-            <li>Mesaj göndererek iletişimi test edin</li>
-          </ol>
-        </div>
-        <div class="info-section">
-          <h4>🔧 Teknik Detaylar</h4>
-          <p><strong>Modulus (p):</strong> Asal sayı, güvenlik için büyük olmalı</p>
-          <p><strong>Üreteç (g):</strong> Modulus'a göre primitive root</p>
-          <p><strong>Kural:</strong> Hiperhalka işlemi tanımlar (örn: Math.pow(a, b) % n)</p>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Help Button -->
-  <button id="helpButton" class="help-button" onclick="openPopup()" title="Yardım">
-    <i class="fas fa-question"></i>
-  </button>
-
-  <!-- Home Button -->
-  <a href="../Anasayfa/index.html" class="home-button" title="Ana Sayfaya Dön">
-    <i class="fas fa-home"></i>
-  </a>
-
-  <script>
-    const API_BASE_URL = 'https://hypercrypt.up.railway.app';
-    // --- state ---
-    const state = {
-      modulus: 23,
-      generator: 5,
-      alicePrivate: 6,
-      bobPrivate: 15,
-      alicePublic: null,
-      bobPublic: null,
-      aliceSecret: null,
-      bobSecret: null,
-      eveActive: false,
-      selected: null
-    }
-
-    // helpers
-    const logEl = document.getElementById('log')
-    function log(text){
-      const t = document.createElement('div'); t.textContent = `[${new Date().toLocaleTimeString()}] ${text}`; logEl.prepend(t);
-    }
-
-    function setActive(who){ state.selected = who; renderSelected(); }
-
-    function renderSelected(){
-      const sel = state.selected;
-      const el = document.getElementById('selectedInfo'); el.innerHTML='';
-      if(!sel){ el.innerHTML = '<div class="small">Henüz bir düğüm seçilmedi. Alice/Bob/Eve\'ye tıklayın.</div>'; return }
-      if(sel==='alice' || sel==='bob'){
-        const p = document.createElement('div'); p.innerHTML = `
-          <div class="info-row"><div class="small">Düğüm</div><div class="mono">${sel.toUpperCase()}</div></div>
-          <div class="info-row"><div class="small">Gizli</div><div class="mono">${state[sel+'Private']}</div></div>
-          <div class="info-row"><div class="small">Genel</div><div class="mono">${state[sel+'Public'] ?? '—'}</div></div>
-          <div class="info-row"><div class="small">Ortak Sır</div><div class="mono">${state[sel+'Secret'] ?? '—'}</div></div>
-          <div style="margin-top:8px;display:flex;gap:8px"><button class="btn" onclick="generate('${sel}')">Genel Hesapla</button><button class="btn" onclick="sendMessage('${sel}')">Mesaj Gönder</button></div>
-        `; el.appendChild(p);
-      } else if(sel==='eve'){
-        const p = document.createElement('div'); p.innerHTML = `
-          <div class="info-row"><div class="small">Düğüm</div><div class="mono">EVE (MITM)</div></div>
-          <div class="info-row"><div class="small">Durum</div><div class="mono">${state.eveActive? 'AKTİF':'PASİF'}</div></div>
-          <div style="margin-top:8px;display:flex;gap:8px"><button class="btn" onclick="toggleEve()">Eve Toggle</button><button class="btn" onclick="inspectLast()">Son Paketleri İncele</button><button class="btn warn" onclick="eveBruteForce()">Kaba Kuvvet Dene</button></div>
-        `; el.appendChild(p);
+      // helpers
+      const logEl = document.getElementById("log");
+      function log(text) {
+        const t = document.createElement("div");
+        t.textContent = `[${new Date().toLocaleTimeString()}] ${text}`;
+        logEl.prepend(t);
       }
-    }
 
-    // simulate simple modular power using BigInt for safety
-   /* function modPow(base, exp, mod){
+      function setActive(who) {
+        state.selected = who;
+        renderSelected();
+      }
+
+      function renderSelected() {
+        const sel = state.selected;
+        const el = document.getElementById("selectedInfo");
+        el.innerHTML = "";
+        if (!sel) {
+          el.innerHTML = `<div class="small">${t("mitm.noNodeSelected", "Henüz bir düğüm seçilmedi. Alice/Bob/Eve'ye tıklayın.")}</div>`;
+          return;
+        }
+        if (sel === "alice" || sel === "bob") {
+          const p = document.createElement("div");
+          p.innerHTML = `
+          <div class="info-row"><div class="small">${t("mitm.nodeLabel", "Düğüm")}</div><div class="mono">${sel.toUpperCase()}</div></div>
+          <div class="info-row"><div class="small">${t("mitm.privateShortLabel", "Gizli")}</div><div class="mono">${state[sel + "Private"]}</div></div>
+          <div class="info-row"><div class="small">${t("mitm.publicShortLabel", "Genel")}</div><div class="mono">${state[sel + "Public"] ?? "—"}</div></div>
+          <div class="info-row"><div class="small">${t("mitm.sharedSecretShortLabel", "Ortak Sır")}</div><div class="mono">${state[sel + "Secret"] ?? "—"}</div></div>
+          <div style="margin-top:8px;display:flex;gap:8px"><button class="btn" onclick="generate('${sel}')">${t("mitm.calcPublicShortBtn", "Genel Hesapla")}</button><button class="btn" onclick="sendMessage('${sel}')">${t("mitm.sendMessageShortBtn", "Mesaj Gönder")}</button></div>
+        `;
+          el.appendChild(p);
+        } else if (sel === "eve") {
+          const p = document.createElement("div");
+          p.innerHTML = `
+          <div class="info-row"><div class="small">${t("mitm.nodeLabel", "Düğüm")}</div><div class="mono">EVE (MITM)</div></div>
+          <div class="info-row"><div class="small">${t("mitm.statusLabel", "Durum")}</div><div class="mono">${state.eveActive ? t("mitm.activeStatus", "AKTİF") : t("mitm.inactiveStatus", "PASİF")}</div></div>
+          <div style="margin-top:8px;display:flex;gap:8px"><button class="btn" onclick="toggleEve()">${t("mitm.eveToggleBtn", "Eve Toggle")}</button><button class="btn" onclick="inspectLast()">${t("mitm.inspectLastBtn", "Son Paketleri İncele")}</button><button class="btn warn" onclick="eveBruteForce()">${t("mitm.bruteForceShortBtn", "Kaba Kuvvet Dene")}</button></div>
+        `;
+          el.appendChild(p);
+        }
+      }
+
+      // simulate simple modular power using BigInt for safety
+      /* function modPow(base, exp, mod){
       base = BigInt(base); exp = BigInt(exp); mod = BigInt(mod);
       let result = 1n; let b = base % mod; let e = exp;
       while(e>0n){ if(e & 1n) result = (result*b)%mod; b=(b*b)%mod; e >>= 1n }
       return result;
     }*/
-    state.modulus = parseInt(document.getElementById('modInput').value);
-    state.generator = parseInt(document.getElementById('genInput').value);
+      state.modulus = parseInt(document.getElementById("modInput").value);
+      state.generator = parseInt(document.getElementById("genInput").value);
 
-    async function generate(who) {
+      async function generate(who) {
         if (!state.hyperDHEnabled) {
-            log('Hiper-DH kapalı: Anahtar hesaplama atlandı.');
-            alert('Hiper-DH modu kapalı olduğu için anahtar hesaplanamaz. Açmak için başlıktaki düğmeyi kullanın.');
-            return;
+          log(
+            t(
+              "mitm.hyperDhDisabledLog",
+              "Hiper-DH kapalı: Anahtar hesaplama atlandı.",
+            ),
+          );
+          alert(
+            t(
+              "mitm.hyperDhDisabledAlert",
+              "Hiper-DH modu kapalı olduğu için anahtar hesaplanamaz. Açmak için başlıktaki düğmeyi kullanın.",
+            ),
+          );
+          return;
         }
 
-        log(`${who.toUpperCase()} genel anahtarını hesaplıyor...`);
+        log(
+          `${who.toUpperCase()} ${t("mitm.calculatingPublicLog", "genel anahtarını hesaplıyor...")}`,
+        );
 
-        const rule = document.getElementById('ruleInput').value;
+        const rule = document.getElementById("ruleInput").value;
 
         const requestData = {
-            generator: state.generator,
-            modulus: state.modulus,
-            privateKey: (who === 'alice') ? state.alicePrivate : state.bobPrivate,
-            theirPublicKey: null, // Genel anahtar hesaplarken bu alan boş gider.
-            rule: rule
+          generator: state.generator,
+          modulus: state.modulus,
+          privateKey: who === "alice" ? state.alicePrivate : state.bobPrivate,
+          theirPublicKey: null, // Genel anahtar hesaplarken bu alan boş gider.
+          rule: rule,
         };
 
         try {
-            const response = await fetch(`${API_BASE_URL}/api/crypto/calculate-key`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(requestData)
-            });
+          const response = await fetch(
+            `${API_BASE_URL}/api/crypto/calculate-key`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(requestData),
+            },
+          );
 
-            const data = await response.json();
+          const data = await response.json();
 
-            if (response.ok) {
-                if (who === 'alice') {
-                    state.alicePublic = data.result;
-                    document.getElementById('alicePublic').textContent = state.alicePublic;
-                } else {
-                    state.bobPublic = data.result;
-                    document.getElementById('bobPublic').textContent = state.bobPublic;
-                }
-                log(data.explanation + " Sonuç: " + data.result);
-                
-                // Eğer her iki genel anahtar da artık biliniyorsa, ortak sırları hesapla.
-                if (state.alicePublic && state.bobPublic) {
-                    computeSecrets();
-                }
+          if (response.ok) {
+            if (who === "alice") {
+              state.alicePublic = data.result;
+              document.getElementById("alicePublic").textContent =
+                state.alicePublic;
             } else {
-                log(`Hata: ${data.explanation}`);
-                alert(`Hata: ${data.explanation}`);
+              state.bobPublic = data.result;
+              document.getElementById("bobPublic").textContent =
+                state.bobPublic;
             }
+            log(
+              data.explanation +
+                " " +
+                t("mitm.resultSuffixLog", "Sonuç:") +
+                " " +
+                data.result,
+            );
+
+            // Eğer her iki genel anahtar da artık biliniyorsa, ortak sırları hesapla.
+            if (state.alicePublic && state.bobPublic) {
+              computeSecrets();
+            }
+          } else {
+            log(`${t("mitm.errorLogPrefix", "Hata:")} ${data.explanation}`);
+            alert(`${t("mitm.errorLogPrefix", "Hata:")} ${data.explanation}`);
+          }
         } catch (error) {
-            log("API'ye bağlanırken bir hata oluştu: " + error.message);
-            alert("API'ye bağlanırken bir hata oluştu: " + error.message);
+          log(
+            t("mitm.apiConnErrorLog", "API'ye bağlanırken bir hata oluştu: ") +
+              error.message,
+          );
+          alert(
+            t("mitm.apiConnErrorLog", "API'ye bağlanırken bir hata oluştu: ") +
+              error.message,
+          );
         }
         renderSelected();
-    }
+      }
 
-    async function computeSecrets() {
-        log("Ortak gizli anahtarlar hesaplanıyor...");
-        const rule = document.getElementById('ruleInput').value;
+      async function computeSecrets() {
+        log(
+          t(
+            "mitm.computingSecretsLog",
+            "Ortak gizli anahtarlar hesaplanıyor...",
+          ),
+        );
+        const rule = document.getElementById("ruleInput").value;
 
         // Alice'in sırrını hesaplamak için istek
         const aliceRequestData = {
-            generator: state.generator,
-            modulus: state.modulus,
-            privateKey: state.alicePrivate,
-            theirPublicKey: state.bobPublic, // Bob'un genel anahtarını kullanır
-            rule: rule
+          generator: state.generator,
+          modulus: state.modulus,
+          privateKey: state.alicePrivate,
+          theirPublicKey: state.bobPublic, // Bob'un genel anahtarını kullanır
+          rule: rule,
         };
 
         // Bob'un sırrını hesaplamak için istek
         const bobRequestData = {
-            generator: state.generator,
-            modulus: state.modulus,
-            privateKey: state.bobPrivate,
-            theirPublicKey: state.alicePublic, // Alice'in genel anahtarını kullanır
-            rule: rule
+          generator: state.generator,
+          modulus: state.modulus,
+          privateKey: state.bobPrivate,
+          theirPublicKey: state.alicePublic, // Alice'in genel anahtarını kullanır
+          rule: rule,
         };
 
         try {
-            // İki isteği aynı anda gönderelim (daha verimli)
-            const [aliceResponse, bobResponse] = await Promise.all([
-                fetch(`${API_BASE_URL}/api/crypto/calculate-key`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(aliceRequestData)
-                }),
-                fetch(`${API_BASE_URL}/api/crypto/calculate-key`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(bobRequestData)
-                })
-            ]);
+          // İki isteği aynı anda gönderelim (daha verimli)
+          const [aliceResponse, bobResponse] = await Promise.all([
+            fetch(`${API_BASE_URL}/api/crypto/calculate-key`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(aliceRequestData),
+            }),
+            fetch(`${API_BASE_URL}/api/crypto/calculate-key`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(bobRequestData),
+            }),
+          ]);
 
-            const aliceData = await aliceResponse.json();
-            const bobData = await bobResponse.json();
+          const aliceData = await aliceResponse.json();
+          const bobData = await bobResponse.json();
 
-            if (aliceResponse.ok && bobResponse.ok) {
-                state.aliceSecret = aliceData.result;
-                state.bobSecret = bobData.result;
-                document.getElementById('aliceSecret').textContent = state.aliceSecret;
-                document.getElementById('bobSecret').textContent = state.bobSecret;
-                
-                if (state.aliceSecret === state.bobSecret) {
-                    log(`Ortak sırlar başarıyla eşleşti: ${state.aliceSecret}`);
-                } else {
-                    log(`HATA! Ortak sırlar eşleşmedi: Alice=${state.aliceSecret}, Bob=${state.bobSecret}`);
-                }
+          if (aliceResponse.ok && bobResponse.ok) {
+            state.aliceSecret = aliceData.result;
+            state.bobSecret = bobData.result;
+            document.getElementById("aliceSecret").textContent =
+              state.aliceSecret;
+            document.getElementById("bobSecret").textContent = state.bobSecret;
 
+            if (state.aliceSecret === state.bobSecret) {
+              log(
+                `${t("mitm.secretsMatchedLog", "Ortak sırlar başarıyla eşleşti:")} ${state.aliceSecret}`,
+              );
             } else {
-                log("Sır hesaplanırken bir hata oluştu.");
+              log(
+                `${t("mitm.secretsMismatchLog", "HATA! Ortak sırlar eşleşmedi: Alice=")}${state.aliceSecret}, Bob=${state.bobSecret}`,
+              );
             }
-
+          } else {
+            log(
+              t(
+                "mitm.secretCalcErrorLog",
+                "Sır hesaplanırken bir hata oluştu.",
+              ),
+            );
+          }
         } catch (error) {
-            log("API'ye bağlanırken bir hata oluştu: " + error.message);
+          log(
+            t("mitm.apiConnErrorLog", "API'ye bağlanırken bir hata oluştu: ") +
+              error.message,
+          );
         }
         renderSelected();
-    }
-
-    // clicking nodes
-    function nodeClick(who){ setActive(who); log(who.toUpperCase() + ' seçildi.'); }
-
-    // packet animation helper
-    function animatePacket(pathPoints, onEnd, modified=false){
-      const svg = document.querySelector('svg.network');
-      const packet = document.getElementById(modified? 'packetMod':'packet');
-      packet.style.visibility='visible';
-      let i=0;
-      const step = () => {
-        if(i>=pathPoints.length){ packet.style.visibility='hidden'; if(onEnd) onEnd(); return }
-        packet.setAttribute('cx', pathPoints[i][0]); packet.setAttribute('cy', pathPoints[i][1]); i++;
-        requestAnimationFrame(step);
       }
-      step();
-    }
-    if (!state.alicePublic && !state.bobPublic) {
-        log("Hiper-DH kapalı mod: Doğrudan iletişim başlatıldı.");
-    }
-    // simulate message send
-    function sendMessage(sender){
-      const message = (sender==='alice')? 'Merhaba Bob, gizli bilgi.' : 'Merhaba Alice, cevap.';
-      log(`${sender.toUpperCase()} -> gönderiyor: "${message}"`);
 
-      // path: Alice -> Eve -> Bob (if Eve active), otherwise direct
-      const a = [180,340]; const e = [500,120]; const b = [820,340];
-
-      if(state.eveActive){
-        // animate to Eve
-        const pathToE = interpolatePath(a, e, 60);
-        animatePacket(pathToE, ()=>{
-          log('Eve paketi yakaladı. Paket içeriği: "' + message + '"');
-          // Eve can modify
-          const modifiedMessage = prompt('Eve: Paketi değiştir (boş bırakırsan değiştirme):', message);
-          const final = (modifiedMessage===null)? message : (modifiedMessage.trim()===''? message: modifiedMessage);
-          if(final!==message) log('Eve paketi değiştirdi -> "' + final + '"');
-          // animate from Eve to Bob (show modified packet with red)
-          const pathEtoB = interpolatePath(e, b, 60);
-          animatePacket(pathEtoB, ()=>{ log('Bob aldı: "' + final + '"'); }, true);
-        });
-      } else {
-        // direct A->B
-        const path = interpolatePath(a, b, 120);
-        animatePacket(path, ()=>{ log('Bob aldı: "' + message + '"'); });
+      // clicking nodes
+      function nodeClick(who) {
+        setActive(who);
+        log(who.toUpperCase() + " " + t("mitm.selectedSuffixLog", "seçildi."));
       }
-    }
 
-    // simple linear interpolation to produce points
-    function interpolatePath(p1,p2,steps){
-      const pts=[]; for(let i=0;i<=steps;i++){ const t=i/steps; const x=p1[0]+(p2[0]-p1[0])*t; const y=p1[1]+(p2[1]-p1[1])*t; pts.push([x,y]); } return pts;
-    }
-
-    function toggleEve(){ state.eveActive = !state.eveActive; document.getElementById('eveBtn').textContent = 'Eve: ' + (state.eveActive? 'Aktif':'Pasif'); renderSelected(); log('Eve durumu -> ' + (state.eveActive? 'AKTİF':'PASİF')); }
-
-    // Eve: backend'deki gerçek kaba-kuvvet (brute-force) saldırısını tetikler.
-    async function eveBruteForce(){
-      if(!state.alicePublic || !state.bobPublic){
-        log('Eve: Önce her iki tarafın genel anahtarları hesaplanmalı.');
-        alert('Eve saldırısı için önce Alice ve Bob genel anahtarlarını hesaplamalı.');
-        return;
+      // packet animation helper
+      function animatePacket(pathPoints, onEnd, modified = false) {
+        const svg = document.querySelector("svg.network");
+        const packet = document.getElementById(
+          modified ? "packetMod" : "packet",
+        );
+        packet.style.visibility = "visible";
+        let i = 0;
+        const step = () => {
+          if (i >= pathPoints.length) {
+            packet.style.visibility = "hidden";
+            if (onEnd) onEnd();
+            return;
+          }
+          packet.setAttribute("cx", pathPoints[i][0]);
+          packet.setAttribute("cy", pathPoints[i][1]);
+          i++;
+          requestAnimationFrame(step);
+        };
+        step();
       }
-      const rule = document.getElementById('ruleInput').value;
-      log('Eve, özel anahtarı bulmak için kaba kuvvet araması başlattı...');
-      try{
-        const response = await fetch(`${API_BASE_URL}/api/crypto/eve-attack`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            rule, generator: state.generator, modulus: state.modulus,
-            publicKeyA: state.alicePublic, publicKeyB: state.bobPublic
-          })
-        });
-        const data = await response.json();
-        log(data.explanation + (data.result!=null ? ' Bulunan ortak sır: ' + data.result : ''));
-      } catch(error){
-        log("Eve API'ye bağlanamadı: " + error.message);
+      if (!state.alicePublic && !state.bobPublic) {
+        log(
+          t(
+            "mitm.directCommLog",
+            "Hiper-DH kapalı mod: Doğrudan iletişim başlatıldı.",
+          ),
+        );
       }
-    }
+      // simulate message send
+      function sendMessage(sender) {
+        const message =
+          sender === "alice"
+            ? t("mitm.demoMessageAlice", "Merhaba Bob, gizli bilgi.")
+            : t("mitm.demoMessageBob", "Merhaba Alice, cevap.");
+        log(
+          `${sender.toUpperCase()} -> ${t("mitm.sendingLog", "gönderiyor:")} "${message}"`,
+        );
 
-    function resetSim(){
-      state.alicePublic=null; state.bobPublic=null; state.aliceSecret=null; state.bobSecret=null; state.eveActive=false;
-      document.getElementById('alicePublic').textContent='—'; document.getElementById('bobPublic').textContent='—';
-      document.getElementById('aliceSecret').textContent='—'; document.getElementById('bobSecret').textContent='—'; document.getElementById('eveBtn').textContent='Eve: Pasif';
-      log('Simülasyon sıfırlandı.'); renderSelected();
-    }
+        // path: Alice -> Eve -> Bob (if Eve active), otherwise direct
+        const a = [180, 340];
+        const e = [500, 120];
+        const b = [820, 340];
 
-    function inspectLast(){ alert('Günlükten son paketleri kontrol edin.'); }
-
-    // initial render
-    document.getElementById('alicePrivate').textContent = state.alicePrivate;
-    document.getElementById('bobPrivate').textContent = state.bobPrivate;
-    document.getElementById('modVal').textContent = state.modulus;
-    document.getElementById('genVal').textContent = state.generator;
-    renderSelected();
-
-    // --- Hyper-DH toggle state (EKLE) ---
-    state.hyperDHEnabled = true; // başlangıçta açık
-
-    // render toggle based on state
-    function renderHyperToggle(){
-    const sw = document.getElementById('hyperSwitch');
-    const label = document.getElementById('hyperStateText');
-    if(!sw || !label) return;
-    if(state.hyperDHEnabled){
-        sw.classList.add('on');
-        label.textContent = 'ON';
-        label.style.color = 'var(--success)';
-    } else {
-        sw.classList.remove('on');
-        label.textContent = 'OFF';
-        label.style.color = 'var(--danger)';
-    }
-
-    // Eğer Hyper-DH kapalıysa rule/mod/gen inputlarını devre dışı bırak (kullanıcı doğrudan mesaj atabilir)
-    const ruleInputEl = document.getElementById('ruleInput');
-    const modInputEl  = document.getElementById('modInput');
-    const genInputEl  = document.getElementById('genInput');
-
-    if(ruleInputEl) ruleInputEl.disabled = !state.hyperDHEnabled;
-    if(modInputEl)  modInputEl.disabled  = !state.hyperDHEnabled;
-    if(genInputEl)  genInputEl.disabled  = !state.hyperDHEnabled;
-
-    // görsel olarak buton metnini güncelle
-    const eveBtn = document.getElementById('eveBtn');
-    if(eveBtn){
-        // (isteğe bağlı) buton stilini etkileme veya yardımcı metin güncelleme
-    }
-    }
-
-    // toggle function (attach to click)
-    function toggleHyperDH(){
-    state.hyperDHEnabled = !state.hyperDHEnabled;
-    log('Hiper-DH modu -> ' + (state.hyperDHEnabled ? 'AÇIK' : 'KAPALI'));
-    renderHyperToggle();
-    renderSelected();
-    }
-
-    // show help explanation
-    function showHyperHelp(){
-    const message = "Hiper-DH ON: Kural ve küme (p,g) kullanılarak genel anahtarlar ve ortak sırlar hesaplanır.\n\nHiper-DH OFF: Anahtar hesaplama/devreye alma atlanır; ileti doğrudan gönderilir. Eve (MITM) aktifse paketleri yakalamaya/degistirmeye devam eder. (Rule/Mod/Gen girişleri kapatılır ve yok sayılır.)";
-    alert(message);
-    }
-
-    // attach events to the header toggle / help (call once on init)
-    (function attachHyperToggleHandlers(){
-    // small delay to ensure DOM elements exist
-    window.addEventListener('DOMContentLoaded', ()=> {
-        const wrapper = document.getElementById('hyperToggle');
-        const helpBtn = document.getElementById('hyperHelp');
-
-        if(wrapper) {
-        wrapper.addEventListener('click', toggleHyperDH);
-        wrapper.addEventListener('keydown', (e)=> { if(e.key==='Enter' || e.key===' ') { e.preventDefault(); toggleHyperDH(); }});
+        if (state.eveActive) {
+          // animate to Eve
+          const pathToE = interpolatePath(a, e, 60);
+          animatePacket(pathToE, () => {
+            log(
+              t(
+                "mitm.eveInterceptedLog",
+                'Eve paketi yakaladı. Paket içeriği: "',
+              ) +
+                message +
+                '"',
+            );
+            // Eve can modify
+            const modifiedMessage = prompt(
+              t(
+                "mitm.evePromptText",
+                "Eve: Paketi değiştir (boş bırakırsan değiştirme):",
+              ),
+              message,
+            );
+            const final =
+              modifiedMessage === null
+                ? message
+                : modifiedMessage.trim() === ""
+                  ? message
+                  : modifiedMessage;
+            if (final !== message)
+              log(
+                t("mitm.eveModifiedLog", 'Eve paketi değiştirdi -> "') +
+                  final +
+                  '"',
+              );
+            // animate from Eve to Bob (show modified packet with red)
+            const pathEtoB = interpolatePath(e, b, 60);
+            animatePacket(
+              pathEtoB,
+              () => {
+                log(t("mitm.bobReceivedLog", 'Bob aldı: "') + final + '"');
+              },
+              true,
+            );
+          });
+        } else {
+          // direct A->B
+          const path = interpolatePath(a, b, 120);
+          animatePacket(path, () => {
+            log(t("mitm.bobReceivedLog", 'Bob aldı: "') + message + '"');
+          });
         }
-        if(helpBtn) helpBtn.addEventListener('click', showHyperHelp);
+      }
 
-        // initial render
+      // simple linear interpolation to produce points
+      function interpolatePath(p1, p2, steps) {
+        const pts = [];
+        for (let i = 0; i <= steps; i++) {
+          const t = i / steps;
+          const x = p1[0] + (p2[0] - p1[0]) * t;
+          const y = p1[1] + (p2[1] - p1[1]) * t;
+          pts.push([x, y]);
+        }
+        return pts;
+      }
+
+      function renderEveBtn() {
+        const btn = document.getElementById("eveBtn");
+        if (!btn) return;
+        btn.textContent =
+          t("mitm.eveLabelPrefix", "Eve:") +
+          " " +
+          (state.eveActive
+            ? t("mitm.activeLabel", "Aktif")
+            : t("mitm.inactiveLabel", "Pasif"));
+      }
+
+      function toggleEve() {
+        state.eveActive = !state.eveActive;
+        renderEveBtn();
+        renderSelected();
+        log(
+          t("mitm.eveStatusChangedLog", "Eve durumu ->") +
+            " " +
+            (state.eveActive
+              ? t("mitm.activeStatus", "AKTİF")
+              : t("mitm.inactiveStatus", "PASİF")),
+        );
+      }
+
+      // Eve: backend'deki gerçek kaba-kuvvet (brute-force) saldırısını tetikler.
+      async function eveBruteForce() {
+        if (!state.alicePublic || !state.bobPublic) {
+          log(
+            t(
+              "mitm.brutePrereqLog",
+              "Eve: Önce her iki tarafın genel anahtarları hesaplanmalı.",
+            ),
+          );
+          alert(
+            t(
+              "mitm.brutePrereqAlert",
+              "Eve saldırısı için önce Alice ve Bob genel anahtarlarını hesaplamalı.",
+            ),
+          );
+          return;
+        }
+        const rule = document.getElementById("ruleInput").value;
+        log(
+          t(
+            "mitm.bruteStartedLog",
+            "Eve, özel anahtarı bulmak için kaba kuvvet araması başlattı...",
+          ),
+        );
+        try {
+          const response = await fetch(
+            `${API_BASE_URL}/api/crypto/eve-attack`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                rule,
+                generator: state.generator,
+                modulus: state.modulus,
+                publicKeyA: state.alicePublic,
+                publicKeyB: state.bobPublic,
+              }),
+            },
+          );
+          const data = await response.json();
+          log(
+            data.explanation +
+              (data.result != null
+                ? " " +
+                  t("mitm.bruteFoundSecretLog", "Bulunan ortak sır:") +
+                  " " +
+                  data.result
+                : ""),
+          );
+        } catch (error) {
+          log(
+            t("mitm.eveApiFailLog", "Eve API'ye bağlanamadı: ") + error.message,
+          );
+        }
+      }
+
+      function resetSim() {
+        state.alicePublic = null;
+        state.bobPublic = null;
+        state.aliceSecret = null;
+        state.bobSecret = null;
+        state.eveActive = false;
+        document.getElementById("alicePublic").textContent = "—";
+        document.getElementById("bobPublic").textContent = "—";
+        document.getElementById("aliceSecret").textContent = "—";
+        document.getElementById("bobSecret").textContent = "—";
+        renderEveBtn();
+        log(t("mitm.resetLog", "Simülasyon sıfırlandı."));
+        renderSelected();
+      }
+
+      function inspectLast() {
+        alert(
+          t("mitm.inspectLastAlert", "Günlükten son paketleri kontrol edin."),
+        );
+      }
+
+      // initial render
+      document.getElementById("alicePrivate").textContent = state.alicePrivate;
+      document.getElementById("bobPrivate").textContent = state.bobPrivate;
+      document.getElementById("modVal").textContent = state.modulus;
+      document.getElementById("genVal").textContent = state.generator;
+      renderSelected();
+
+      // --- Hyper-DH toggle state (EKLE) ---
+      state.hyperDHEnabled = true; // başlangıçta açık
+
+      // render toggle based on state
+      function renderHyperToggle() {
+        const sw = document.getElementById("hyperSwitch");
+        const label = document.getElementById("hyperStateText");
+        if (!sw || !label) return;
+        if (state.hyperDHEnabled) {
+          sw.classList.add("on");
+          label.textContent = t("mitm.onLabel", "ON");
+          label.style.color = "var(--success)";
+        } else {
+          sw.classList.remove("on");
+          label.textContent = t("mitm.offLabel", "OFF");
+          label.style.color = "var(--danger)";
+        }
+
+        // Eğer Hyper-DH kapalıysa rule/mod/gen inputlarını devre dışı bırak (kullanıcı doğrudan mesaj atabilir)
+        const ruleInputEl = document.getElementById("ruleInput");
+        const modInputEl = document.getElementById("modInput");
+        const genInputEl = document.getElementById("genInput");
+
+        if (ruleInputEl) ruleInputEl.disabled = !state.hyperDHEnabled;
+        if (modInputEl) modInputEl.disabled = !state.hyperDHEnabled;
+        if (genInputEl) genInputEl.disabled = !state.hyperDHEnabled;
+
+        // görsel olarak buton metnini güncelle
+        const eveBtn = document.getElementById("eveBtn");
+        if (eveBtn) {
+          // (isteğe bağlı) buton stilini etkileme veya yardımcı metin güncelleme
+        }
+      }
+
+      // toggle function (attach to click)
+      function toggleHyperDH() {
+        state.hyperDHEnabled = !state.hyperDHEnabled;
+        log(
+          t("mitm.hyperDhModeChangedLog", "Hiper-DH modu ->") +
+            " " +
+            (state.hyperDHEnabled
+              ? t("mitm.onStateWord", "AÇIK")
+              : t("mitm.offStateWord", "KAPALI")),
+        );
         renderHyperToggle();
-    });
-    })();
-
-    // Pop-up functions
-    function openPopup() {
-      const popup = document.getElementById('infoPopup');
-      popup.classList.add('show');
-      document.body.style.overflow = 'hidden'; // Prevent background scrolling
-    }
-
-    function closePopup() {
-      const popup = document.getElementById('infoPopup');
-      popup.classList.remove('show');
-      document.body.style.overflow = 'auto'; // Restore scrolling
-    }
-
-    // Close popup when clicking outside
-    document.addEventListener('click', function(event) {
-      const popup = document.getElementById('infoPopup');
-      if (event.target === popup) {
-        closePopup();
+        renderSelected();
       }
-    });
 
-    // Close popup with Escape key
-    document.addEventListener('keydown', function(event) {
-      if (event.key === 'Escape') {
-        closePopup();
+      // show help explanation
+      function showHyperHelp() {
+        const message = t(
+          "mitm.hyperHelpAlert",
+          "Hiper-DH ON: Kural ve küme (p,g) kullanılarak genel anahtarlar ve ortak sırlar hesaplanır.\n\nHiper-DH OFF: Anahtar hesaplama/devreye alma atlanır; ileti doğrudan gönderilir. Eve (MITM) aktifse paketleri yakalamaya/degistirmeye devam eder. (Rule/Mod/Gen girişleri kapatılır ve yok sayılır.)",
+        );
+        alert(message);
       }
-    });
 
-  </script>
-</body>
+      // attach events to the header toggle / help (call once on init)
+      (function attachHyperToggleHandlers() {
+        // small delay to ensure DOM elements exist
+        window.addEventListener("DOMContentLoaded", () => {
+          const wrapper = document.getElementById("hyperToggle");
+          const helpBtn = document.getElementById("hyperHelp");
+
+          if (wrapper) {
+            wrapper.addEventListener("click", toggleHyperDH);
+            wrapper.addEventListener("keydown", (e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                toggleHyperDH();
+              }
+            });
+          }
+          if (helpBtn) helpBtn.addEventListener("click", showHyperHelp);
+
+          // initial render
+          renderHyperToggle();
+        });
+      })();
+
+      // Pop-up functions
+      function openPopup() {
+        const popup = document.getElementById("infoPopup");
+        popup.classList.add("show");
+        document.body.style.overflow = "hidden"; // Prevent background scrolling
+      }
+
+      function closePopup() {
+        const popup = document.getElementById("infoPopup");
+        popup.classList.remove("show");
+        document.body.style.overflow = "auto"; // Restore scrolling
+      }
+
+      // Close popup when clicking outside
+      document.addEventListener("click", function (event) {
+        const popup = document.getElementById("infoPopup");
+        if (event.target === popup) {
+          closePopup();
+        }
+      });
+
+      // Close popup with Escape key
+      document.addEventListener("keydown", function (event) {
+        if (event.key === "Escape") {
+          closePopup();
+        }
+      });
+
+      document.addEventListener("languageChanged", function (event) {
+        renderSelected();
+        renderEveBtn();
+        renderHyperToggle();
+
+        // Aktif dil butonunu güncelle
+        const currentLang = event.detail?.lang || "tr";
+
+        document.querySelectorAll(".lang-switch-btn").forEach(function (btn) {
+          btn.classList.toggle(
+            "active",
+            btn.getAttribute("data-lang") === currentLang,
+          );
+        });
+      });
+
+      document.addEventListener("DOMContentLoaded", function () {
+        const currentLang = window.HyperCryptI18n?.getLanguage() || "tr";
+
+        document.querySelectorAll(".lang-switch-btn").forEach(function (btn) {
+          btn.classList.toggle(
+            "active",
+            btn.getAttribute("data-lang") === currentLang,
+          );
+        });
+      });
+    </script>
+  </body>
 </html>

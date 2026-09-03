@@ -532,30 +532,31 @@ input:checked + .slider:before {
 /* language switcher buttons */
 .lang-switch {
   display: flex;
+  align-items: center;
   gap: 6px;
   margin-left: 12px;
 }
 
-.lang-switch-btn {
-  background: rgba(255, 255, 255, 0.1);
-  border: 1px solid rgba(255, 255, 255, 0.25);
-  color: inherit;
+.lang-switch .lang-switch-btn {
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: var(--muted);
   border-radius: 8px;
-  padding: 8px 12px;
+  padding: 6px 10px;
   font-size: 13px;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
-.lang-switch-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
+.lang-switch .lang-switch-btn:hover {
+  color: #fff;
 }
 
-.lang-switch-btn.active {
-  background: #6c5ce7;
-  color: white;
-  border-color: transparent;
+.lang-switch .lang-switch-btn.active {
+  background: #6c5ce7 !important;
+  color: white !important;
+  border-color: transparent !important;
 }
 
 /* Animations */

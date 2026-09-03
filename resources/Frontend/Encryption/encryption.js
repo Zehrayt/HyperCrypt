@@ -1,4 +1,36 @@
 document.addEventListener("DOMContentLoaded", () => {
+  // DİL BUTONLARI
+  const langButtons = document.querySelectorAll(".lang-switch-btn");
+
+  function updateLanguageButton(lang) {
+    langButtons.forEach((button) => {
+      button.classList.toggle("active", button.dataset.lang === lang);
+    });
+  }
+
+  const savedLang = localStorage.getItem("language") || "tr";
+
+  // Sayfa açıldığında aktif dili göster
+  updateLanguageButton(savedLang);
+
+  // Dil butonlarına tıklama
+  langButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      const selectedLang = button.dataset.lang;
+
+      localStorage.setItem("language", selectedLang);
+
+      updateLanguageButton(selectedLang);
+
+      // i18n.js'in dinleyebileceği event
+      document.dispatchEvent(
+        new CustomEvent("languageChanged", {
+          detail: { language: selectedLang },
+        }),
+      );
+    });
+  });
+
   const modeSwitcher = document.getElementById("modeSwitcher");
   const customMapMode = document.getElementById("customMapMode");
   const binaryMode = document.getElementById("binaryMode");

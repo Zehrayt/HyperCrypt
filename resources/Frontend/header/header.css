@@ -80,6 +80,36 @@ header nav ul li a:hover {
   color: darkblue;
 }
 
+/* language switcher buttons */
+.lang-switch {
+  display: flex;
+  gap: 6px;
+  margin-left: 12px;
+  transform: translateX(-50px);
+}
+
+.lang-switch-btn {
+  background: #2563eb;
+  color: gainsboro;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.lang-switch-btn:hover {
+  color: #fff;
+}
+
+.lang-switch-btn.active {
+  background: darkblue !important;
+  color: white !important;
+  border-color: transparent !important;
+}
+
 /* Responsive design for mobile */
 @media (max-width: 768px) {
   header {
@@ -135,7 +165,10 @@ header nav ul li a:hover {
     position: absolute;
     left: 50%;
     transform: translateX(-50%);
-    transition: transform 0.25s ease, opacity 0.2s ease, top 0.25s ease,
+    transition:
+      transform 0.25s ease,
+      opacity 0.2s ease,
+      top 0.25s ease,
       background 0.2s ease;
   }
 
