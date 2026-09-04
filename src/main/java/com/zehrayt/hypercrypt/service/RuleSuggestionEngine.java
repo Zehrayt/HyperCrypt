@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -136,9 +137,9 @@ public class RuleSuggestionEngine {
                 break;
             }
             if (verifies(scored.operation, baseSet)) {
-                results.add(new Suggestion(scored.candidate.rule, String.format(
-                    "\"%s\" yerine \"%s\" denenirse hiper-yapı aksiyomları sağlanıyor (AxiomVerifier ile doğrulandı).",
-                    originalRule, scored.candidate.rule)));
+                 String explanation = messageSource.getMessage("suggestion.verifiedFix",
+                    new Object[]{originalRule, scored.candidate.rule}, LocaleContextHolder.getLocale());
+                results.add(new Suggestion(scored.candidate.rule, explanation));
             }
         }
 
