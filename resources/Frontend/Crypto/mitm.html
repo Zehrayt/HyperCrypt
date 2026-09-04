@@ -1093,6 +1093,13 @@
         bobSecret: null,
         eveActive: false,
         selected: null,
+        // NOT: Bu alan önceden hiç tanımlanmamıştı; bu yüzden generate()
+        // içindeki "if (!state.hyperDHEnabled)" kontrolü sayfa ilk açıldığında
+        // (değer undefined -> falsy olduğundan) HER ZAMAN devreye giriyor ve
+        // "Hiper-DH modu kapalı" uyarısıyla anahtar hesaplamayı engelliyordu --
+        // oysa üstteki başlık anahtarı görsel olarak varsayılan "ON" gösteriyordu.
+        // Görünen varsayılanla eşleşmesi için burada açıkça true olarak başlatılıyor.
+        hyperDHEnabled: true,
       };
 
       // helpers

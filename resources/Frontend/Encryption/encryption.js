@@ -400,14 +400,14 @@ document.addEventListener("DOMContentLoaded", () => {
     let decryptionLine;
     if (decryptResult && decryptResult.ok) {
       const suffix = ambiguous
-        ? ` ${t("enc.decryptAmbiguousNote", "(UYARI: kural bu adımlardan en az birinde birebir/enjektif değil -- birden fazla aday değer aynı şifreli sonucu verdiği için gösterilen çözüm zincirin BİRÇOK olası çözümünden biridir, tek olduğu garanti edilmez.)")}`
+        ? ` ${t("enc.decryptAmbiguousNote", "(UYARI: kural enjektif değil; gösterilen çözüm birden fazla olası çözümden biridir.)")}`
         : "";
       decryptionLine = `${t("enc.decryptedResultLabel", "Çözülen Mesaj:")} <strong>${reconstructedMessage}</strong>${suffix}`;
     } else {
       const reason = decryptResult ? decryptResult.reason : "unknown";
       decryptionLine = t(
         "enc.decryptFailedNote",
-        "Bu kural ve anahtar haritasıyla zincir tutarlı biçimde çözülemedi (sebep: {reason}). Bu, ilgili kuralın bu döngüsel zincirleme için tersine çevrilebilir olmadığını gösterir.",
+        "Zincir bu kural ve anahtar haritasıyla çözülemedi (sebep: {reason}) -- kural bu zincirleme için tersine çevrilebilir değil.",
       ).replace("{reason}", reason);
     }
 
@@ -423,7 +423,7 @@ document.addEventListener("DOMContentLoaded", () => {
       <div>
         <span class="step-label">${t("enc.decryptionLabel", "Alıcı Tarafında Çözümleme (Decryption):")}</span>
         <span class="message-content">${t("enc.chainExplain1", 'Bu mesaj <strong>"Döngüsel Zincirleme"</strong> yöntemiyle şifrelenmiştir. Her harf bir sonrakine cebirsel olarak bağlıdır (Örn: a ο b).')}</span>
-        <span class="message-content">${t("enc.chainExplain2b", "Alıcı, kuralı ve paylaşılan anahtar haritasını (keyMappings) bilir; zincirin ilk değerini (Alice'in gönderdiği ilk harfe karşılık gelen, ayrıca paylaşılmış bir başlangıç değeri -- bir bakıma bir 'IV') kullanarak zinciri GERÇEKTEN ileri yönde çözer.")}</span>
+        <span class="message-content">${t("enc.chainExplain2b", "Alıcı, kuralı ve paylaşılan anahtar haritasını bilir; zincirin bilinen ilk değerinden başlayarak ileri yönde çözer.")}</span>
         <span class="message-content">${decryptionLine}</span>
       </div>
     `;
@@ -448,9 +448,19 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     // Binary preview'den işlenmiş binary mesajı alalım
-    const previewContent = binaryPreviewOutput.querySelector(
-      ".message-content:last-of-type",
+    // NOT: ":last-of-type" burada YANLIŞ sonuç veriyordu -- her ".message-content"
+    // span'ı kendi ayrı <p> ebeveyni içinde bulunduğundan, ikisi de kendi
+    // ebeveyni içinde "son (ve tek) örnek" sayılıyor ve querySelector,
+    // DOM sırasına göre İLK eşleşeni (yani orijinal/şifrelenmemiş binary'yi)
+    // döndürüyordu. Bunun yerine tüm ".message-content" span'larını alıp
+    // GERÇEKTEN sonuncusunu (Kural Uygulanmış Binary) seçiyoruz.
+    const previewContents = binaryPreviewOutput.querySelectorAll(
+      ".message-content",
     );
+    const previewContent =
+      previewContents.length > 0
+        ? previewContents[previewContents.length - 1]
+        : null;
     const processedBinaryMessage = previewContent
       ? previewContent.textContent
       : "";
@@ -513,7 +523,7 @@ document.addEventListener("DOMContentLoaded", () => {
     } = lastBinaryResult;
     const involutionNote = isInvolution
       ? ""
-      : ` ${t("enc.binaryNotInvolutionNote", "(UYARI: bu kural kendi kendinin tersi -- involution -- değil; kuralın aynısını şifreli bitlere yeniden uygulamak orijinal mesajı geri vermedi. Gerçek bir çözümleme için bu kuralın matematiksel tersi ayrıca tanımlanmalıdır.)")}`;
+      : ` ${t("enc.binaryNotInvolutionNote", "(UYARI: bu kural involution değil; aynı kuralı yeniden uygulamak orijinal mesajı geri vermedi.)")}`;
     binaryCommunicationLog.innerHTML = `
       <div>
         <span class="step-label">${t("enc.sentTextMessageLabel", "Gönderilen Mesaj (Orijinal Metin):")}</span>
@@ -525,7 +535,7 @@ document.addEventListener("DOMContentLoaded", () => {
       </div>
       <div>
         <span class="step-label">${t("enc.recipientDecryptionLabel", "Alıcı Tarafında Çözümleme:")}</span>
-        <span class="message-content">${t("enc.binaryDecryptExplain2", "Alıcı, AYNI bit-kuralını şifreli bitlere yeniden uygulayarak çözümler (kural involutif ise -- örn. varsayılan XOR 1 -- bu matematiksel olarak orijinali geri verir).")}</span>
+        <span class="message-content">${t("enc.binaryDecryptExplain2", "Alıcı aynı bit-kuralını şifreli bitlere yeniden uygular; kural involutifse (örn. varsayılan XOR 1) bu orijinali geri verir.")}</span>
         <span class="message-content">${t("enc.decryptedTextLabel", "Çözülen Mesaj (Metin):")} <strong>${decryptedMessage}</strong>${involutionNote}</span>
       </div>
     `;
