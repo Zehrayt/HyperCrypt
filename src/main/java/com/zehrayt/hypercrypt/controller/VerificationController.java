@@ -13,6 +13,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -32,8 +33,9 @@ public class VerificationController {
     private final RuleSuggestionEngine ruleSuggestionEngine;
     private final MessageSource messageSource;
 
-    private static final String NO_SUGGESTION_FOUND_MESSAGE =
-        "Bu kural için otomatik olarak doğrulanmış bir düzeltme önerisi bulunamadı.";
+    private String noSuggestionFoundMessage() {
+    return messageSource.getMessage("verify.noSuggestionFound", null, LocaleContextHolder.getLocale());
+}
 
     @Autowired
     public VerificationController(RuleParserService ruleParserService,
@@ -48,7 +50,7 @@ public class VerificationController {
 
     private String formatVerifiedSuggestions(List<RuleSuggestionEngine.Suggestion> verified) {
         if (verified.isEmpty()) {
-            return NO_SUGGESTION_FOUND_MESSAGE;
+            return noSuggestionFoundMessage();
         }
         return verified.stream().map(s -> s.explanation).collect(Collectors.joining(" "));
     }
@@ -83,22 +85,22 @@ public class VerificationController {
                 // 0. Adım: Boyut sınırı kontrolü (DoS koruması).
                 if (request.baseSet.size() > MAX_BASE_SET_SIZE) {
                     return ResponseEntity.badRequest().body(Map.of(
-                        "error", String.format(
-                            "Sonlu küme boyutu çok büyük (%d). En fazla %d eleman desteklenmektedir.",
-                            request.baseSet.size(), MAX_BASE_SET_SIZE)
+                        "error", messageSource.getMessage("verify.error.baseSetTooLarge",
+                            new Object[]{request.baseSet.size(), MAX_BASE_SET_SIZE},
+                            LocaleContextHolder.getLocale())
                     ));
                 }
 
                 // 1. Kuralın içinde standart çarpma (*) içerip içermediğini kontrol et.
                 if (request.rule == null || !request.rule.contains("*")) {
-                    String suggestionText = NO_SUGGESTION_FOUND_MESSAGE;
+                    String suggestionText = noSuggestionFoundMessage();
                     if (request.rule != null) {
                         suggestionText = formatVerifiedSuggestions(
                             ruleSuggestionEngine.suggest(request.rule, request.baseSet));
                     }
 
                     return ResponseEntity.badRequest().body(Map.of(
-                        "error", "Girilen kural standart çarpma (*) işlemi içermelidir.",
+                        "error", messageSource.getMessage("verify.error.missingMultiplication", null, LocaleContextHolder.getLocale()),
                         "suggestion", suggestionText
                     ));
                 }
@@ -141,14 +143,15 @@ public class VerificationController {
                 return ResponseEntity.ok(result);
             } 
             else {
-                throw new InvalidRuleException("İstek için 'baseSet' (sonlu küme) veya 'domain' (sonsuz küme) belirtilmelidir.");
+                throw new InvalidRuleException(messageSource.getMessage("verify.error.missingBaseSetOrDomain", null, LocaleContextHolder.getLocale()));
             }
 
         } catch (InvalidRuleException e) {
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
         } catch (Exception e) {
             log.error("verify sırasında beklenmedik hata", e);
-            return ResponseEntity.status(500).body(Map.of("error", "Sunucuda beklenmedik bir hata oluştu."));
+            return ResponseEntity.status(500).body(Map.of("error",
+                messageSource.getMessage("common.error.unexpected", null, LocaleContextHolder.getLocale())));
         }
     }
 }
