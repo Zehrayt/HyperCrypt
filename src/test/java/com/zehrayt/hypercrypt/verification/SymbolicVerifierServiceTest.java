@@ -1,18 +1,43 @@
 package com.zehrayt.hypercrypt.verification;
 
 import com.zehrayt.hypercrypt.dtos.VerificationResult;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
+import org.springframework.context.support.ResourceBundleMessageSource;
+
+import java.util.Locale;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class SymbolicVerifierServiceTest {
 
     private SymbolicVerifierService symbolicVerifierService;
+    private MessageSource messageSource;
 
     @BeforeEach
     void setUp() {
-        symbolicVerifierService = new SymbolicVerifierService();
+        //  verifySymbolically() içindeki locale LocaleContextHolder'dan okunuyor, 
+        // testin de aynı locale'i kullanması gerekiyor.
+        LocaleContextHolder.setLocale(Locale.forLanguageTag("tr"));
+
+        ResourceBundleMessageSource ms = new ResourceBundleMessageSource();
+        ms.setBasename("messages");
+        ms.setDefaultEncoding("UTF-8");
+        this.messageSource = ms;
+
+        symbolicVerifierService = new SymbolicVerifierService(messageSource);
+    }
+
+    @AfterEach
+    void tearDown() {
+        LocaleContextHolder.resetLocaleContext();
+    }
+
+     private String msg(String key) {
+        return messageSource.getMessage(key, null, LocaleContextHolder.getLocale());
     }
 
     @Test
@@ -43,7 +68,7 @@ class SymbolicVerifierServiceTest {
         // sembolik analiz tarafından doğrudan reddedilmelidir.
         VerificationResult result = symbolicVerifierService.verifySymbolically("a + b", "INTEGERS");
 
-        assertEquals("Çarpma İçermeyen Kural", result.getFailingAxiom());
+        assertEquals(msg("symbolic.axiom.missingMultiplication"), result.getFailingAxiom());
         assertFalse(result.isHypergroup());
     }
 
@@ -53,7 +78,7 @@ class SymbolicVerifierServiceTest {
         // içeren kurallar sembolik analiz tarafından reddedilmelidir.
         VerificationResult result = symbolicVerifierService.verifySymbolically("a * x", "INTEGERS");
 
-        assertEquals("Geçersiz Kural Formatı", result.getFailingAxiom());
+        assertEquals(msg("symbolic.axiom.invalidRuleFormat"), result.getFailingAxiom());
         assertFalse(result.isHypergroup());
     }
 
@@ -61,7 +86,7 @@ class SymbolicVerifierServiceTest {
     void test_emptyRule_isRejected() {
         VerificationResult result = symbolicVerifierService.verifySymbolically("", "INTEGERS");
 
-        assertEquals("Geçersiz Kural Formatı", result.getFailingAxiom());
+        assertEquals(msg("symbolic.axiom.invalidRuleFormat"), result.getFailingAxiom());
     }
 
     @Test

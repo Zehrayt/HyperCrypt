@@ -11,21 +11,30 @@ import edu.jas.structure.RingFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
+import java.util.Locale;
 
 @Service
 public class SymbolicVerifierService {
 
     private static final Logger log = LoggerFactory.getLogger(SymbolicVerifierService.class);
+    private final MessageSource messageSource;
+
+    public SymbolicVerifierService(MessageSource messageSource) {
+        this.messageSource = messageSource;
+    }
 
     public VerificationResult verifySymbolically(String rule, String domain) {
         log.debug("Performing symbolic verification for rule '{}' on domain '{}'...", rule, domain);
+        Locale locale = LocaleContextHolder.getLocale();
 
         VerificationResult result = new VerificationResult();
 
         // 1. Kuralın geçerli bir polinom formatında olup olmadığını kontrol et.
         if (!isValidPolynomialRule(rule)) {
-            result.setSuggestion("Symbolic analysis only supports polynomial rules with variables 'a' and 'b'.");
-            result.setFailingAxiom("Geçersiz Kural Formatı");
+            result.setSuggestion(messageSource.getMessage("symbolic.error.invalidRuleFormat.suggestion", null, locale));
+            result.setFailingAxiom(messageSource.getMessage("symbolic.axiom.invalidRuleFormat", null, locale));
             result.setSemihypergroup(false);
             result.setQuasihypergroup(false);
             result.setHypergroup(false);
@@ -34,8 +43,8 @@ public class SymbolicVerifierService {
 
         // 2. Kuralın içinde standart çarpma (*) içerip içermediğini kontrol et.
         if (!rule.contains("*")) {
-            result.setSuggestion("Symbolic analysis requires a rule that includes standard multiplication (*).");
-            result.setFailingAxiom("Çarpma İçermeyen Kural");
+            result.setSuggestion(messageSource.getMessage("symbolic.error.missingMultiplication.suggestion", null, locale));
+            result.setFailingAxiom(messageSource.getMessage("symbolic.axiom.missingMultiplication", null, locale));
             result.setSemihypergroup(false);
             result.setQuasihypergroup(false);
             result.setHypergroup(false);
@@ -56,23 +65,24 @@ public class SymbolicVerifierService {
             result.setHypergroup(isHypergroup);
 
             if (isHypergroup) {
-                result.setHighestStructure("Hipergrup (Symbolic)");
+                result.setHighestStructure(messageSource.getMessage("symbolic.structure.hypergroup", null, locale));
                 result.setFailingAxiom(null);
             } else if (result.isSemihypergroup()) {
-                result.setHighestStructure("Yarı Hipergrup (Semihypergroup)");
-                result.setFailingAxiom("Üretim Aksiyomu (Reproduction)");
+                result.setHighestStructure(messageSource.getMessage("symbolic.structure.semihypergroup", null, locale));
+                result.setFailingAxiom(messageSource.getMessage("axiom.name.reproduction", null, locale));
             } else if (result.isQuasihypergroup()) {
                 // Birleşmeli değil ama üretim aksiyomunu sağlıyor: bu da geçerli, ayrı bir
                 // sınıflandırmadır ve artık (düzeltme sayesinde) doğru şekilde tespit edilebiliyor.
-                result.setHighestStructure("Quasihypergrup (Symbolic) - Birleşmeli Değil");
-                result.setFailingAxiom("Birleşme Özelliği (Associativity)");
+                result.setHighestStructure(messageSource.getMessage("symbolic.structure.quasihypergroupNotAssociative", null, locale));
+                result.setFailingAxiom(messageSource.getMessage("symbolic.axiom.associativity", null, locale));
             } else if (result.getFailingAxiom() != null) {
-                result.setHighestStructure("Hipergrupoid (Symbolic)");
+                result.setHighestStructure(messageSource.getMessage("symbolic.structure.hypergroupoid", null, locale));
             }
 
         } catch (Exception e) {
             log.error("Symbolic verification failed for rule '{}'", rule, e);
-            result.setSuggestion("Symbolic analysis failed: " + e.getMessage());
+            result.setSuggestion(messageSource.getMessage("symbolic.error.verificationFailed",
+                new Object[]{e.getMessage()}, locale));
             result.setSemihypergroup(false);
         }
 
@@ -81,6 +91,8 @@ public class SymbolicVerifierService {
 
     // generic yardımcı metot (birleşme testi)
     private <C extends RingElem<C>> void verifyAssociativity(String rule, String domain, VerificationResult result) {
+
+        Locale locale = LocaleContextHolder.getLocale();
 
         @SuppressWarnings("unchecked")
         RingFactory<C> factory = (RingFactory<C>) getCoefficientFactory(domain);
@@ -107,11 +119,11 @@ public class SymbolicVerifierService {
 
             if (lhs.equals(rhs)) {
                 result.setSemihypergroup(true);
-                result.setHighestStructure("At least a Semihypergroup (Symbolic)");
+                result.setHighestStructure(messageSource.getMessage("symbolic.structure.atLeastSemihypergroup", null, locale));
             } else {
                 result.setSemihypergroup(false);
-                result.setFailingAxiom("Birleşme Özelliği (Associativity)");
-                result.setHighestStructure("Hypergroupoid (Symbolic)");
+                result.setFailingAxiom(messageSource.getMessage("symbolic.axiom.associativity", null, locale));
+                result.setHighestStructure(messageSource.getMessage("symbolic.structure.hypergroupoid", null, locale));
             }
 
             // DÜZELTME (Hakem 2 uyarısı): Burada ARTIK isQuasihypergroup/isHypergroup
@@ -121,7 +133,8 @@ public class SymbolicVerifierService {
 
         } catch (Exception e) {
             log.error("Associativity analysis failed for rule '{}'", rule, e);
-            result.setSuggestion("Associativity analysis failed: " + e.getMessage());
+            result.setSuggestion(messageSource.getMessage("symbolic.error.associativityAnalysisFailed",
+                new Object[]{e.getMessage()}, locale));
             result.setSemihypergroup(false);
         }
     }
@@ -155,6 +168,8 @@ public class SymbolicVerifierService {
      */
     private <C extends RingElem<C>> void verifyGenerationAxiom(String rule, String domain, VerificationResult result) {
         log.debug("Symbolically checking generation axiom using JAS for rule: {}", rule);
+
+        Locale locale = LocaleContextHolder.getLocale();
 
         try {
             @SuppressWarnings("unchecked")
@@ -219,33 +234,33 @@ public class SymbolicVerifierService {
 
             if (!isSolvable) {
                 StringBuilder reasons = new StringBuilder();
-                String unitHint = isIntegerDomain
-                        ? "must be a constant equal to +1 or -1 (a unit in Z)"
-                        : "must be a nonzero constant (Q allows division)";
+                String unitHint = messageSource.getMessage(
+                isIntegerDomain 
+                ? "symbolic.reproduction.unitHint.integer" 
+                : "symbolic.reproduction.unitHint.rational", null, locale);
                 if (!rightReproduction) {
-                    reasons.append("Right reproduction (a\u2218H=H) fails: the coefficient of 'b' ")
-                            .append(unitHint).append(".");
+                    reasons.append(messageSource.getMessage("symbolic.reproduction.rightFails",
+                        new Object[]{unitHint}, locale));
                 }
                 if (!leftReproduction) {
                     if (reasons.length() > 0) {
                         reasons.append(" ");
                     }
-                    reasons.append("Left reproduction (H\u2218a=H) fails: the coefficient of 'a' ")
-                            .append(unitHint).append(".");
+                    reasons.append(messageSource.getMessage("symbolic.reproduction.leftFails",
+                        new Object[]{unitHint}, locale));
                 }
                 result.setSuggestion(reasons.toString());
             }
 
             result.setQuasihypergroup(isSolvable);
             if (!isSolvable && result.getFailingAxiom() == null) {
-                result.setFailingAxiom("Üretim Aksiyomu (Reproduction)");
-            }
+                result.setFailingAxiom(messageSource.getMessage("axiom.name.reproduction", null, locale));            }
 
         } catch (Exception e) {
             log.error("Generation axiom analysis failed for rule '{}'", rule, e);
             result.setQuasihypergroup(false);
             if (result.getFailingAxiom() == null) {
-                result.setFailingAxiom("Üretim Aksiyomu (Reproduction) - Analiz sırasında hata oluştu");
+                result.setFailingAxiom(messageSource.getMessage("symbolic.axiom.reproductionAnalysisError", null, locale));
             }
         }
     }

@@ -71,6 +71,7 @@ async function showResults() {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
+        "Accept-Language": document.documentElement.lang || "tr",
       },
       body: JSON.stringify(requestData),
     });
