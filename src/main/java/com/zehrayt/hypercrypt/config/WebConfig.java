@@ -14,13 +14,27 @@ import org.springframework.web.servlet.i18n.AcceptHeaderLocaleResolver;
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
 
-    @Value("${app.cors.allowed-origins:http://localhost:3000,http://localhost:8080,http://127.0.0.1:5500,http://localhost:5500}")
+    // NOT: Varsayılan listede sadece yerel geliştirme originleri vardı
+    // (localhost/127.0.0.1). Gerçek üretim frontend'i artık Netlify'da
+    // yayında (https://hypercrypt.netlify.app) ve bu origin listede
+    // olmadığı için tarayıcı "Fonksiyon" sayfasındaki /api/verify isteğinin
+    // preflight'ını "No 'Access-Control-Allow-Origin' header" hatasıyla
+    // engelliyordu -- backend gerçekte ayaktaydı, sorun tamamen CORS
+    // izinli origin listesindeydi. Üretim adresini ekliyoruz; ayrıca
+    // Netlify'nin deploy-preview/branch-preview adresleri (ör.
+    // "https://deploy-preview-3--hypercrypt.netlify.app") için de bir
+    // joker (wildcard) desen ekliyoruz ki ileride onlar da otomatik çalışsın.
+    @Value("${app.cors.allowed-origins:http://localhost:3000,http://localhost:8080,http://127.0.0.1:5500,http://localhost:5500,https://hypercrypt.netlify.app,https://*.netlify.app}")
     private String[] allowedOrigins;
 
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/api/**")
-                .allowedOrigins(allowedOrigins)
+                // "allowedOrigins" tam eşleşme ister; joker karakterli
+                // Netlify preview adreslerini de kapsayabilmek için
+                // "allowedOriginPatterns" kullanıyoruz (tam adresler de
+                // burada normal şekilde çalışmaya devam eder).
+                .allowedOriginPatterns(allowedOrigins)
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
                 .allowedHeaders("*");
     }
