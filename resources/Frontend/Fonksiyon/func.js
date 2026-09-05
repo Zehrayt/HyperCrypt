@@ -1,7 +1,15 @@
 const finiteBtn = document.getElementById("finiteBtn");
 const infiniteBtn = document.getElementById("infiniteBtn");
-//const API_BASE_URL = "https://hypercrypt.onrender.com";
-const API_BASE_URL = "http://localhost:8080";
+// NOT: Aktif satır "http://localhost:8080" idi -- bu, sadece bilgisayarınızda
+// Spring Boot backend'i elle ÇALIŞTIRIYORSANIZ işe yarar. Render deploy'u artık
+// düzeldiği ve https://hypercrypt.onrender.com canlıda çalıştığı için (bkz.
+// WebConfig.java -- 127.0.0.1:5500/localhost:5500 originleri zaten CORS
+// izinli listesinde), sayfayı doğrudan tarayıcıda veya Live Server ile
+// açtığınızda gerçek sonuç alabilmeniz için üretim adresini aktif hale
+// getiriyoruz. Yerelde backend'i elle çalıştırıp onu test etmek isterseniz
+// alttaki iki satırın yorumunu değiştirin.
+const API_BASE_URL = "https://hypercrypt.onrender.com";
+//const API_BASE_URL = "http://localhost:8080";
 
 finiteBtn.addEventListener("click", function () {
   if (this.id === "finiteBtn") {
@@ -71,7 +79,6 @@ async function showResults() {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Accept-Language": document.documentElement.lang || "tr",
       },
       body: JSON.stringify(requestData),
     });
@@ -94,29 +101,6 @@ async function showResults() {
 }
 
 // --- YENİ YARDIMCI FONKSİYONLAR ---
-
-// DÜZELTME: Daha önce bir aksiyom sonucu backend tarafından hiç
-// değerlendirilmediğinde (örn. "fail-fast" stratejisiyle closure
-// veya birleşme testinde erken durulduğu için ilgili alan JSON'da
-// null/undefined geldiğinde), arayüz bunu doğrudan "true"/"false"
-// metniyle aynı <span class="pill ..."> kalıbına basıyordu; bu da
-// ekranda "null" ya da "undefined" yazan ya da tamamen boş görünen,
-// yanlış yorumlanmaya açık bir rozet üretiyordu (Hakem: "not
-// evaluated" ile "false" birbirinden ayırt edilemiyor). Bu yardımcı
-// fonksiyon üç durumu (true / false / henüz değerlendirilmedi) açıkça
-// ayırt eden, kendi CSS sınıfı ve okunur etiketi olan bir rozet
-// üretir.
-function pillMarkup(value) {
-  if (value === true) {
-    return `<span class="pill true">${t("func.pillTrue", "Evet")}</span>`;
-  }
-  if (value === false) {
-    return `<span class="pill false">${t("func.pillFalse", "Hayır")}</span>`;
-  }
-  // null, undefined ya da başka bir "değer yok" durumu: bu aksiyom
-  // fail-fast nedeniyle hiç test edilmemiş demektir, "false" değildir.
-  return `<span class="pill not-evaluated">${t("func.pillNotEvaluated", "Değerlendirilmedi")}</span>`;
-}
 
 // Başarılı sonuçları ekrana yazdıran fonksiyon
 function renderSuccess(data) {
@@ -149,11 +133,11 @@ function renderSuccess(data) {
         <ul>
             <li>
               <span>${t("func.semihypergroupLabel", "Yarı Hipergrup (Birleşme)")}</span>
-              ${pillMarkup(data.semihypergroup)}
+              <span class="pill ${data.semihypergroup}">${data.semihypergroup}</span>
             </li>
             <li>
               <span>${t("func.quasihypergroupLabel", "Kuazi Hipergrup (Üretim)")}</span>
-              ${pillMarkup(data.quasihypergroup)}
+              <span class="pill ${data.quasihypergroup}">${data.quasihypergroup}</span>
             </li>
         </ul>
 
@@ -161,11 +145,11 @@ function renderSuccess(data) {
         <ul>
             <li>
               <span>${t("func.distributiveLabel", "Dağılma Özelliği")}</span>
-              ${pillMarkup(data.isDistributive)}
+              <span class="pill ${data.isDistributive}">${data.isDistributive}</span>
             </li>
             <li>
               <span>${t("func.negativePropertyLabel", "Negatif Özelliği")}</span>
-              ${pillMarkup(data.hasNegativeProperty)}
+              <span class="pill ${data.hasNegativeProperty}">${data.hasNegativeProperty}</span>
             </li>
         </ul>
     `;
