@@ -1080,7 +1080,19 @@
     </a>
 
     <script>
-      const API_BASE_URL = "https://hypercrypt.up.railway.app";
+      // NOT: Burada önceden ölü/yanlış bir adres olan
+      // "https://hypercrypt.up.railway.app" kodlanmıştı -- proje artık
+      // Railway'de değil Render'da barındırılıyor (bkz. func.js'teki
+      // API_BASE_URL kalıbı: "https://hypercrypt.onrender.com"). Bu, MITM
+      // sayfasındaki tüm fetch() çağrılarının (calculate-key, eve-attack)
+      // her zaman başarısız olmasının GERÇEK nedeniydi -- tarayıcı, var
+      // olmayan/yanlış bir sunucuya bağlanmaya çalışınca bunu bir CORS
+      // hatası olarak raporluyordu. Diğer sayfalarla (func.js) aynı kalıba
+      // geçiriyoruz: üretim adresi yorum satırında, yerel geliştirme için
+      // localhost aktif -- üretime alırken alttaki satırı yorum satırına
+      // alıp üsttekini aktif etmeniz yeterli.
+      //const API_BASE_URL = "https://hypercrypt.onrender.com";
+      const API_BASE_URL = "http://localhost:8080";
       // --- state ---
       const state = {
         modulus: 23,
