@@ -104,4 +104,45 @@ class CryptoServiceTest {
 
         assertEquals(sharedSecretFromAlice, sharedSecretFromBob);
     }
+
+    // REGRESYON TESTİ (Hakem 2 uyarısı, Round 3): hakemin verdiği somut karşı örnek,
+    // x∘y = {xy, 2xy} mod 257, geçerli bir çarpımsal hiperhalka tanımlıyor ama Alice ve
+    // Bob'u (gerçek boyutlu gizli anahtarlarla, örn. b=43) farklı ortak sırlara götürüyor.
+    // sampleBound artık 12 ile sınırlı olmadığından (bkz. validateKeyExchangeCompatibility),
+    // bu kural artık herhangi bir anahtar üretilmeden ÖNCE reddedilmelidir.
+    @Test
+    void test_hyperDiffieHellman_refereeCounterexampleRule_isRejected() {
+        String rule = "[(a * b) % n, (2 * a * b) % n]";
+        int n = 257;
+        int g = 3;
+        int aliceSecret = 2;
+        int bobSecret = 43;
+
+        assertThrows(IllegalStateException.class, () ->
+            cryptoService.calculatePublicValue(rule, g, aliceSecret, n));
+        assertThrows(IllegalStateException.class, () ->
+            cryptoService.calculatePublicValue(rule, g, bobSecret, n));
+    }
+
+    // REGRESYON TESTİ (Hakem 2 uyarısı, Round 3): sampleBound'un gerçek modulus'a
+    // çıkarılması, örnekleme sırasında büyük üsler denenmesine yol açar. Bu test, klasik
+    // üstel alma tarzı (Math.pow tabanlı) bir kuralın bu genişletme yüzünden YANLIŞLIKLA
+    // reddedilmediğini doğrular: RuleParserService.toSafeInt, örnekleme sırasında ortaya
+    // çıkan Infinity/NaN/taşma durumlarını o tek denemeyi atlayarak (sessizce bozulmuş veri
+    // üretmeden) ele almalı, bu da protokolün kendisini etkilememelidir.
+    @Test
+    void test_hyperDiffieHellman_classicalExponentiationRule_isNotFalselyRejected() {
+        String rule = "Math.pow(a, b) % n";
+        int n = 257;
+        int g = 3;
+        int aliceSecret = 5;
+        int bobSecret = 7;
+
+        assertDoesNotThrow(() -> {
+            Integer alicePublic = cryptoService.calculatePublicValue(rule, g, aliceSecret, n);
+            Integer bobPublic = cryptoService.calculatePublicValue(rule, g, bobSecret, n);
+            cryptoService.calculateSharedSecret(rule, bobPublic, aliceSecret, n);
+            cryptoService.calculateSharedSecret(rule, alicePublic, bobSecret, n);
+        });
+    }
 }

@@ -91,6 +91,31 @@ public class RuleParserService {
         }
     }
 
+    // DUZELTME (Hakem 2 uyarisi, Round 3 sonrasi): Rhino sayilari IEEE-754 double olarak
+    // temsil eder. Bir kural (orn. Math.pow(a,b) gibi ustel bir ifade) buyuk degerlerle
+    // cagrildiginda sonuc ya Infinity/NaN'a tasabilir ya da 2^53'u asarak tam sayi
+    // hassasiyetini kaybedebilir. Onceden bu durum sessizce (Number).intValue() ile
+    // "kesilerek" (Java'nin double->int daraltma kuraline gore doygunlasarak ya da NaN
+    // icin 0 olarak) yanlis bir tam sayiya donusturuluyordu - bu, hem AxiomVerifier'in
+    // aksiyom testlerini hem de CryptoService.validateKeyExchangeCompatibility'nin
+    // orneklemesini sessizce bozabilirdi (bkz. CryptoService Code 8 yorumlari). Artik boyle
+    // bir durumda acikca InvalidRuleException firlatiliyor; cagiran taraflar (orn.
+    // validateKeyExchangeCompatibility) bu istisnayi zaten "bu orrnekleme noktasini atla"
+    // olarak ele aliyor, boylece bozulmus sayisal veri hicbir karsilastirmaya girmiyor.
+    private static final double MAX_SAFE_RESULT_MAGNITUDE = Integer.MAX_VALUE;
+
+    private int toSafeInt(Number number) {
+        double value = number.doubleValue();
+        if (Double.isNaN(value) || Double.isInfinite(value) || Math.abs(value) > MAX_SAFE_RESULT_MAGNITUDE) {
+            throw new InvalidRuleException(String.format(
+                "Kural, guvenli tam sayi araliginin disinda bir sonuc uretti (deger: %s). "
+                + "Buyuk usslu ifadeler (or. Math.pow(a,b)) IEEE-754 double hassasiyetini asarak "
+                + "Infinity/NaN veya tasmis bir degere yol acmis olabilir; girdi araligini "
+                + "kucultun veya moduler bir formulasyon kullanin.", value));
+        }
+        return (int) value;
+    }
+
     public BiFunction<Integer, Integer, Set<Integer>> parseRule(String ruleString, Map<String, Object> constants) {
         if (ruleString == null || ruleString.isBlank()) {
             throw new InvalidRuleException("Kural metni boş olamaz.");
@@ -174,12 +199,12 @@ public class RuleParserService {
                 Set<Integer> resultSet = new HashSet<>();
 
                 if (result instanceof Number) {
-                    resultSet.add(((Number) result).intValue());
+                    resultSet.add(toSafeInt((Number) result));
                 } else if (result instanceof NativeArray) {
                     NativeArray nativeArray = (NativeArray) result;
                     for (Object item : nativeArray) {
                         if (item instanceof Number) {
-                            resultSet.add(((Number) item).intValue());
+                            resultSet.add(toSafeInt((Number) item));
                         }
                     }
                 } else if (result != null && "undefined".equals(Context.toString(result))) {
